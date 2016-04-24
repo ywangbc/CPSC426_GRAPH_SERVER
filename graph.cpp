@@ -328,6 +328,7 @@ static void exec_command(const std::string& method, const std::vector<u64>& args
       fprintf(fp, "Number of args does not match in shortest_path: %lu \n", args.size());
       return;
     }
+    print_graph(edge_list);
     int status = shortest_path(edge_list, args);
     if(status >= 0)
     {
