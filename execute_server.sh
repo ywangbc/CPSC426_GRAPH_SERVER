@@ -1,1 +1,1 @@
-./cs426_graph_server 6999 /dev/sdc
+./cs426_graph_server -f 6999 /dev/sdc
