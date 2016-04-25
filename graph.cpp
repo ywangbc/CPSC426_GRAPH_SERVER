@@ -92,6 +92,17 @@ static void exec_command(const std::string& method, const std::vector<u64>& args
     int32_t retval;
     retval = clientp->add_node_rep((int32_t)args[0]);
     if(retval == 1) {
+      if(!add_node(edge_list, args)) {
+        mg_printf(nc, "HTTP/1.1 204 OK\r\n\r\n");
+        fprintf(fp, "HTTP/1.1 204 OK\r\n\r\n");
+        return;
+      }
+      retval = storageLogp->update_log(ADD_NODE, args[0], 0);
+      if(retval == -1) {
+        mg_printf(nc, "HTTP/1.1 507 No space for log\r\n\r\n");
+        fprintf(fp, "HTTP/1.1 507 No space for log\r\n\r\n");
+        return;
+      }
       mg_printf(nc, "HTTP/1.1 200 OK\r\nContent-Length: %zu\r\nContent-Type: application/json\r\n\r\n%s\r\n", strlen(buf), buf);
       fprintf(fp, "HTTP/1.1 200 OK\r\nContent-Length: %zu\r\nContent-Type: application/json\r\n\r\n%s\r\n", strlen(buf), buf);
       fprintf(fp, "\n\n");
@@ -123,6 +134,25 @@ static void exec_command(const std::string& method, const std::vector<u64>& args
     int32_t retval;
     retval = clientp->add_edge_rep((int32_t)args[0], (int32_t)args[1]);
     if(retval == 1) {
+      retval = add_edge(edge_list, args);
+      if(retval == -1) {
+        mg_printf(nc, "HTTP/1.1 400 Bad Request\r\n\r\n");
+        fprintf(fp, "HTTP/1.1 400 Bad Request\r\n\r\n");
+        return;
+      }
+      else if(retval == 0) {
+        mg_printf(nc, "HTTP/1.1 204 OK\r\n\r\n");
+        fprintf(fp, "HTTP/1.1 204 OK\r\n\r\n");
+        return;
+      }
+
+      retval = storageLogp->update_log(ADD_EDGE, args[0], args[1]);
+      if(retval == -1) {
+        mg_printf(nc, "HTTP/1.1 507 No space for log\r\n\r\n");
+        fprintf(fp, "HTTP/1.1 507 No space for log\r\n\r\n");
+        return;
+      }
+
       mg_printf(nc, "HTTP/1.1 200 OK\r\nContent-Length: %zu\r\nContent-Type: application/json\r\n\r\n%s\r\n", strlen(buf), buf);
       fprintf(fp, "HTTP/1.1 200 OK\r\nContent-Length: %zu\r\nContent-Type: application/json\r\n\r\n%s\r\n", strlen(buf), buf);
       fprintf(fp, "\n\n");
@@ -147,9 +177,7 @@ static void exec_command(const std::string& method, const std::vector<u64>& args
       fprintf(fp, "Number of args does not match in remove_node: %lu \n", args.size());
       return;
     }
-
     //handle response
-
     unsigned int count;
     count = json_emit(buf, sizeof(buf), "{ s: i }", "node_id", (long)args[0]);
     if(count > sizeof(buf))
@@ -160,6 +188,17 @@ static void exec_command(const std::string& method, const std::vector<u64>& args
     int32_t retval;
     retval = clientp->remove_node_rep((int32_t)args[0]);
     if(retval == 1) {
+      if(!remove_node(edge_list, args)) {
+        mg_printf(nc, "HTTP/1.1 400 Bad Request\r\n\r\n");
+        fprintf(fp, "HTTP/1.1 400 Bad Request\r\n\r\n");
+        return;
+      }
+      retval = storageLogp->update_log(REMOVE_NODE, args[0], 0);
+      if(retval == -1) {
+        mg_printf(nc, "HTTP/1.1 507 No space for log\r\n\r\n");
+        fprintf(fp, "HTTP/1.1 507 No space for log\r\n\r\n");
+        return ;
+      }
       mg_printf(nc, "HTTP/1.1 200 OK\r\nContent-Length: %zu\r\nContent-Type: application/json\r\n\r\n%s\r\n", strlen(buf), buf);
       fprintf(fp, "HTTP/1.1 200 OK\r\nContent-Length: %zu\r\nContent-Type: application/json\r\n\r\n%s\r\n", strlen(buf), buf);
       fprintf(fp, "\n\n");
@@ -193,6 +232,17 @@ static void exec_command(const std::string& method, const std::vector<u64>& args
     int32_t retval;
     retval = clientp->remove_edge_rep((int32_t)args[0], (int32_t)args[1]);
     if(retval == 1) {
+      if(!remove_edge(edge_list, args)) {
+        mg_printf(nc, "HTTP/1.1 400 Bad Request\r\n\r\n");
+        fprintf(fp, "HTTP/1.1 400 Bad Request\r\n\r\n");
+        return;
+      }
+      retval = storageLogp->update_log(REMOVE_EDGE, args[0], args[1]);
+      if(retval == -1) {
+        mg_printf(nc, "HTTP/1.1 507 No space for log\r\n\r\n");
+        fprintf(fp, "HTTP/1.1 507 No space for log\r\n\r\n");
+        return;
+      }
       mg_printf(nc, "HTTP/1.1 200 OK\r\nContent-Length: %zu\r\nContent-Type: application/json\r\n\r\n%s", strlen(buf), buf);
       fprintf(fp, "HTTP/1.1 200 OK\r\nContent-Length: %zu\r\nContent-Type: application/json\r\n\r\n%s", strlen(buf), buf);
       fprintf(fp, "\n\n");
