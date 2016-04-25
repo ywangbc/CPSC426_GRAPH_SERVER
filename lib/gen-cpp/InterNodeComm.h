@@ -25,6 +25,7 @@ class InterNodeCommIf {
   virtual int32_t remove_node_rep(const int32_t node) = 0;
   virtual int32_t add_edge_rep(const int32_t node1, const int32_t node2) = 0;
   virtual int32_t remove_edge_rep(const int32_t node1, const int32_t node2) = 0;
+  virtual int32_t checkpoint_rep() = 0;
 };
 
 class InterNodeCommIfFactory {
@@ -67,6 +68,10 @@ class InterNodeCommNull : virtual public InterNodeCommIf {
     return _return;
   }
   int32_t remove_edge_rep(const int32_t /* node1 */, const int32_t /* node2 */) {
+    int32_t _return = 0;
+    return _return;
+  }
+  int32_t checkpoint_rep() {
     int32_t _return = 0;
     return _return;
   }
@@ -502,6 +507,98 @@ class InterNodeComm_remove_edge_rep_presult {
 
 };
 
+
+class InterNodeComm_checkpoint_rep_args {
+ public:
+
+  InterNodeComm_checkpoint_rep_args(const InterNodeComm_checkpoint_rep_args&);
+  InterNodeComm_checkpoint_rep_args& operator=(const InterNodeComm_checkpoint_rep_args&);
+  InterNodeComm_checkpoint_rep_args() {
+  }
+
+  virtual ~InterNodeComm_checkpoint_rep_args() throw();
+
+  bool operator == (const InterNodeComm_checkpoint_rep_args & /* rhs */) const
+  {
+    return true;
+  }
+  bool operator != (const InterNodeComm_checkpoint_rep_args &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const InterNodeComm_checkpoint_rep_args & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+
+class InterNodeComm_checkpoint_rep_pargs {
+ public:
+
+
+  virtual ~InterNodeComm_checkpoint_rep_pargs() throw();
+
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+typedef struct _InterNodeComm_checkpoint_rep_result__isset {
+  _InterNodeComm_checkpoint_rep_result__isset() : success(false) {}
+  bool success :1;
+} _InterNodeComm_checkpoint_rep_result__isset;
+
+class InterNodeComm_checkpoint_rep_result {
+ public:
+
+  InterNodeComm_checkpoint_rep_result(const InterNodeComm_checkpoint_rep_result&);
+  InterNodeComm_checkpoint_rep_result& operator=(const InterNodeComm_checkpoint_rep_result&);
+  InterNodeComm_checkpoint_rep_result() : success(0) {
+  }
+
+  virtual ~InterNodeComm_checkpoint_rep_result() throw();
+  int32_t success;
+
+  _InterNodeComm_checkpoint_rep_result__isset __isset;
+
+  void __set_success(const int32_t val);
+
+  bool operator == (const InterNodeComm_checkpoint_rep_result & rhs) const
+  {
+    if (!(success == rhs.success))
+      return false;
+    return true;
+  }
+  bool operator != (const InterNodeComm_checkpoint_rep_result &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const InterNodeComm_checkpoint_rep_result & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+typedef struct _InterNodeComm_checkpoint_rep_presult__isset {
+  _InterNodeComm_checkpoint_rep_presult__isset() : success(false) {}
+  bool success :1;
+} _InterNodeComm_checkpoint_rep_presult__isset;
+
+class InterNodeComm_checkpoint_rep_presult {
+ public:
+
+
+  virtual ~InterNodeComm_checkpoint_rep_presult() throw();
+  int32_t* success;
+
+  _InterNodeComm_checkpoint_rep_presult__isset __isset;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+
+};
+
 class InterNodeCommClient : virtual public InterNodeCommIf {
  public:
   InterNodeCommClient(boost::shared_ptr< ::apache::thrift::protocol::TProtocol> prot) {
@@ -539,6 +636,9 @@ class InterNodeCommClient : virtual public InterNodeCommIf {
   int32_t remove_edge_rep(const int32_t node1, const int32_t node2);
   void send_remove_edge_rep(const int32_t node1, const int32_t node2);
   int32_t recv_remove_edge_rep();
+  int32_t checkpoint_rep();
+  void send_checkpoint_rep();
+  int32_t recv_checkpoint_rep();
  protected:
   boost::shared_ptr< ::apache::thrift::protocol::TProtocol> piprot_;
   boost::shared_ptr< ::apache::thrift::protocol::TProtocol> poprot_;
@@ -558,6 +658,7 @@ class InterNodeCommProcessor : public ::apache::thrift::TDispatchProcessor {
   void process_remove_node_rep(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot, void* callContext);
   void process_add_edge_rep(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot, void* callContext);
   void process_remove_edge_rep(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot, void* callContext);
+  void process_checkpoint_rep(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot, void* callContext);
  public:
   InterNodeCommProcessor(boost::shared_ptr<InterNodeCommIf> iface) :
     iface_(iface) {
@@ -565,6 +666,7 @@ class InterNodeCommProcessor : public ::apache::thrift::TDispatchProcessor {
     processMap_["remove_node_rep"] = &InterNodeCommProcessor::process_remove_node_rep;
     processMap_["add_edge_rep"] = &InterNodeCommProcessor::process_add_edge_rep;
     processMap_["remove_edge_rep"] = &InterNodeCommProcessor::process_remove_edge_rep;
+    processMap_["checkpoint_rep"] = &InterNodeCommProcessor::process_checkpoint_rep;
   }
 
   virtual ~InterNodeCommProcessor() {}
@@ -629,6 +731,15 @@ class InterNodeCommMultiface : virtual public InterNodeCommIf {
     return ifaces_[i]->remove_edge_rep(node1, node2);
   }
 
+  int32_t checkpoint_rep() {
+    size_t sz = ifaces_.size();
+    size_t i = 0;
+    for (; i < (sz - 1); ++i) {
+      ifaces_[i]->checkpoint_rep();
+    }
+    return ifaces_[i]->checkpoint_rep();
+  }
+
 };
 
 // The 'concurrent' client is a thread safe client that correctly handles
@@ -671,6 +782,9 @@ class InterNodeCommConcurrentClient : virtual public InterNodeCommIf {
   int32_t remove_edge_rep(const int32_t node1, const int32_t node2);
   int32_t send_remove_edge_rep(const int32_t node1, const int32_t node2);
   int32_t recv_remove_edge_rep(const int32_t seqid);
+  int32_t checkpoint_rep();
+  int32_t send_checkpoint_rep();
+  int32_t recv_checkpoint_rep(const int32_t seqid);
  protected:
   boost::shared_ptr< ::apache::thrift::protocol::TProtocol> piprot_;
   boost::shared_ptr< ::apache::thrift::protocol::TProtocol> poprot_;

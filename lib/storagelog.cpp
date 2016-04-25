@@ -19,12 +19,13 @@ int StorageLog::checkspace(std::unordered_map<u64, std::unordered_set<u64>>edge_
   }
 }
 
-
-//store the current checkpoint
-//increase generation number in superblock
-//update lastblock and lastentry
-//return 0 on success
-//return -1 indicating no enough space for checkpoint
+/*************************************
+ *store the current checkpoint
+ *increase generation number in superblock
+ *update lastblock and lastentry
+ *return 0 on success
+ *return -1 indicating no enough space for checkpoint
+ **************************************/
 int StorageLog::checkpoint(int fd) {
   if(checkspace(edge_list) == -1) {
     return -1;

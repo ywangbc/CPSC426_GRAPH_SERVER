@@ -41,6 +41,7 @@ class InterNodeCommHandler : public InterNodeCommIf{
     int32_t remove_node_rep(int32_t node);
     int32_t add_edge_rep(int32_t node1, int32_t node2);
     int32_t remove_edge_rep(int32_t node1, int32_t node2);
+    int32_t checkpoint_rep();
 };
 
 class InterNodeCommCloneFactory : virtual public InterNodeCommIfFactory {

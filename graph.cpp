@@ -410,6 +410,11 @@ static void exec_command(const std::string& method, const std::vector<u64>& args
   }
   else if (method.compare("checkpoint") == 0) {
     printf("checkpointing...\n");
+    if(clientp->checkpoint_rep() < 0) {
+      mg_printf(nc, "HTTP/1.1 507 insufficient space for checkpoint on remote\r\n\r\n");
+      fprintf(fp, "HTTP/1.1 507 insufficient space for checkpoint on remote\r\n\r\n");
+      return;
+    }
     if(storageLogp->checkpoint(fd) < 0) {
       mg_printf(nc, "HTTP/1.1 507 insufficient space for checkpoint\r\n\r\n");
       fprintf(fp, "HTTP/1.1 507 insufficient space for checkpoint\r\n\r\n");

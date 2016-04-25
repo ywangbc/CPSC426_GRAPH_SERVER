@@ -151,3 +151,29 @@ int32_t InterNodeCommHandler::remove_edge_rep(int32_t node1, int32_t node2)
   }
   return 1;
 }
+/***********************************************
+ * checkpoint_rep
+ * return -1 if no space for checkpoint on remote or local
+ * return 0 on success
+ **********************************************/  
+int32_t InterNodeCommHandler::checkpoint_rep() 
+{
+  int32_t retval;
+  if(clientp != 0) {
+    retval = clientp->checkpoint_rep();
+    if(retval == -1) {
+      printf("No enough storage (remote) for check point in checkpoint_rep\n");
+      return -1;
+    }
+  }
+  retval = storageLog.checkpoint(storageLog.fd);
+  if(retval == -1) {
+      printf("No enough storage (local) for check point in checkpoint_rep\n");
+  }
+  return retval;
+}
+
+
+
+
+

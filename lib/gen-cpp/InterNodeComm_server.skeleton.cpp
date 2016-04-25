@@ -40,6 +40,11 @@ class InterNodeCommHandler : virtual public InterNodeCommIf {
     printf("remove_edge_rep\n");
   }
 
+  int32_t checkpoint_rep() {
+    // Your implementation goes here
+    printf("checkpoint_rep\n");
+  }
+
 };
 
 int main(int argc, char **argv) {
