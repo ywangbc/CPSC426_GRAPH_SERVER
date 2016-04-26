@@ -8,7 +8,9 @@
 int32_t InterNodeCommHandler::add_node_rep(int32_t node) 
 {
   int32_t retval;
+  printf("Received add node from parent\n");
   if(clientp != 0) {
+    printf("Passing add node to child\n");
     retval = clientp->add_node_rep(node);
     if(retval == -1) {
       printf("No enough storage (remote) in add_node_rep, add failed\n");
@@ -20,6 +22,7 @@ int32_t InterNodeCommHandler::add_node_rep(int32_t node)
     }
   }
 
+  printf("Adding node at local\n");
   vector<u64> nodes;
   nodes.push_back((u64)node);
   if(!add_node(storageLog.edge_list, nodes)) {
