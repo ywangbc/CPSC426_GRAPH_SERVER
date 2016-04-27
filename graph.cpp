@@ -24,8 +24,10 @@ char* DISKNAME;
 int fd; //file descriptor for storage disk
 
 StorageLog* storageLogp;
-InterNodeCommClient* clientp = 0;
-
+boost::shared_ptr<TTransport> socket_local;
+boost::shared_ptr<TTransport> transport_local;
+boost::shared_ptr<TProtocol> protocol_local;
+boost::shared_ptr<InterNodeCommClient> clientp;
 
 static std::string get_method(const char* p)
 {
@@ -90,7 +92,9 @@ static void exec_command(const std::string& method, const std::vector<u64>& args
       return;
     }
     int32_t retval;
+    transport_local->open();
     retval = clientp->add_node_rep((int32_t)args[0]);
+    transport_local->close();
     if(retval == 1) {
       if(!add_node(edge_list, args)) {
         mg_printf(nc, "HTTP/1.1 204 OK\r\n\r\n");
@@ -132,7 +136,9 @@ static void exec_command(const std::string& method, const std::vector<u64>& args
     }
 
     int32_t retval;
+    transport_local->open();
     retval = clientp->add_edge_rep((int32_t)args[0], (int32_t)args[1]);
+    transport_local->close();
     if(retval == 1) {
       retval = add_edge(edge_list, args);
       if(retval == -1) {
@@ -186,7 +192,9 @@ static void exec_command(const std::string& method, const std::vector<u64>& args
     }
 
     int32_t retval;
+    transport_local->open();
     retval = clientp->remove_node_rep((int32_t)args[0]);
+    transport_local->close();
     if(retval == 1) {
       if(!remove_node(edge_list, args)) {
         mg_printf(nc, "HTTP/1.1 400 Bad Request\r\n\r\n");
@@ -230,7 +238,9 @@ static void exec_command(const std::string& method, const std::vector<u64>& args
     }
     
     int32_t retval;
+    transport_local->open();
     retval = clientp->remove_edge_rep((int32_t)args[0], (int32_t)args[1]);
+    transport_local->close();
     if(retval == 1) {
       if(!remove_edge(edge_list, args)) {
         mg_printf(nc, "HTTP/1.1 400 Bad Request\r\n\r\n");
@@ -410,11 +420,14 @@ static void exec_command(const std::string& method, const std::vector<u64>& args
   }
   else if (method.compare("checkpoint") == 0) {
     printf("checkpointing...\n");
+    transport_local->open();
     if(clientp->checkpoint_rep() < 0) {
+      transport_local->close();
       mg_printf(nc, "HTTP/1.1 507 insufficient space for checkpoint on remote\r\n\r\n");
       fprintf(fp, "HTTP/1.1 507 insufficient space for checkpoint on remote\r\n\r\n");
       return;
     }
+    transport_local->close();
     if(storageLogp->checkpoint(fd) < 0) {
       mg_printf(nc, "HTTP/1.1 507 insufficient space for checkpoint\r\n\r\n");
       fprintf(fp, "HTTP/1.1 507 insufficient space for checkpoint\r\n\r\n");
@@ -489,21 +502,17 @@ void mongoose_start() {
 }
 
 void thrift_start(char* slave_addr, int slave_port) {
-  boost::shared_ptr<TTransport> socket;
-  boost::shared_ptr<TTransport> transport;
-  boost::shared_ptr<TProtocol> protocol;
   
   if(slave_addr != 0) {
-    socket = boost::shared_ptr<TTransport>(new TSocket(slave_addr, slave_port));
-    transport = boost::shared_ptr<TTransport>(new TBufferedTransport(socket));
-    protocol = boost::shared_ptr<TProtocol>(new TBinaryProtocol(transport));
-    clientp = new InterNodeCommClient(protocol);
-
-    transport->open();
+    socket_local = boost::shared_ptr<TTransport>(new TSocket(slave_addr, slave_port));
+    transport_local = boost::shared_ptr<TTransport>(new TBufferedTransport(socket_local));
+    protocol_local = boost::shared_ptr<TProtocol>(new TBinaryProtocol(transport_local));
+    clientp = boost::shared_ptr<InterNodeCommClient>(new InterNodeCommClient(protocol_local));
+    //transport->open();
   }
 
   TThreadedServer server(
-      boost::make_shared<InterNodeCommProcessorFactory>(boost::make_shared<InterNodeCommCloneFactory>(*storageLogp, clientp)),
+      boost::make_shared<InterNodeCommProcessorFactory>(boost::make_shared<InterNodeCommCloneFactory>(*storageLogp, transport_local, clientp)),
       boost::make_shared<TServerSocket>(slave_port), //port to communicate with parent as a slave
       boost::make_shared<TBufferedTransportFactory>(),
       boost::make_shared<TBinaryProtocolFactory>());
@@ -511,11 +520,6 @@ void thrift_start(char* slave_addr, int slave_port) {
   cout << "Starting the master slave server...\n";
   server.serve();
 
-  if(clientp) {
-    transport->close();
-    delete clientp;
-    clientp = 0;
-  }
   cout << "Done. \n";
 }
 

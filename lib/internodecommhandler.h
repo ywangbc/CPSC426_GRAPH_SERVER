@@ -29,13 +29,15 @@ using namespace apache::thrift::server;
 
 class InterNodeCommHandler : public InterNodeCommIf{
   StorageLog& storageLog;
-  InterNodeCommClient* clientp;
+  boost::shared_ptr<TTransport> transport;
+  boost::shared_ptr<InterNodeCommClient> clientp;
   public:
   //If this is tail node, slave_addr == 0
-    InterNodeCommHandler(StorageLog& storageLog_, InterNodeCommClient* clientp_)
+    InterNodeCommHandler(StorageLog& storageLog_, boost::shared_ptr<TTransport> transport_, boost::shared_ptr<InterNodeCommClient> clientp_)
       :storageLog(storageLog_)
     {
-      clientp = clientp_;
+      this->transport = transport_;
+      this->clientp = clientp_;
     }
     int32_t add_node_rep(int32_t node);
     int32_t remove_node_rep(int32_t node);
@@ -47,11 +49,13 @@ class InterNodeCommHandler : public InterNodeCommIf{
 class InterNodeCommCloneFactory : virtual public InterNodeCommIfFactory {
   public:
     StorageLog& storageLog;
-    InterNodeCommClient* clientp;
-    InterNodeCommCloneFactory(StorageLog& storageLog_, InterNodeCommClient* clientp_)
+    boost::shared_ptr<TTransport> transport;
+    boost::shared_ptr<InterNodeCommClient> clientp;
+    InterNodeCommCloneFactory(StorageLog& storageLog_, boost::shared_ptr<TTransport> transport_, boost::shared_ptr<InterNodeCommClient> clientp_)
      :storageLog(storageLog_) 
     {
-      clientp = clientp_;
+      this->transport = transport_;
+      this->clientp = clientp_;
     }
 
     virtual ~InterNodeCommCloneFactory() {}
@@ -63,7 +67,7 @@ class InterNodeCommCloneFactory : virtual public InterNodeCommIfFactory {
       cout << "\tPeerHost: "    << sock->getPeerHost() << "\n";
       cout << "\tPeerAddress: " << sock->getPeerAddress() << "\n";
       cout << "\tPeerPort: "    << sock->getPeerPort() << "\n";
-      return new InterNodeCommHandler(storageLog, clientp);
+      return new InterNodeCommHandler(storageLog, transport, clientp);
     }
     virtual void releaseHandler(InterNodeCommIf* handler) {
       delete handler;
