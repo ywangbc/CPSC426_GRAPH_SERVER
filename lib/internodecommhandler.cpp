@@ -9,8 +9,8 @@ int32_t InterNodeCommHandler::add_node_rep(int32_t node)
 {
   int32_t retval;
   printf("Received add node from parent\n");
-  transport->open();
-  if(!clientp) {
+  if(clientp != NULL) {
+    transport->open();
     printf("Passing add node to child\n");
     retval = clientp->add_node_rep(node);
     if(retval == -1) {
@@ -23,8 +23,8 @@ int32_t InterNodeCommHandler::add_node_rep(int32_t node)
       transport->close();
       return 0;
     }
+    transport->close();
   }
-  transport->close();
 
   printf("Adding node at local\n");
   vector<u64> nodes;
@@ -49,8 +49,8 @@ int32_t InterNodeCommHandler::add_node_rep(int32_t node)
 int32_t InterNodeCommHandler::remove_node_rep(int32_t node) 
 {
   int32_t retval;
-  transport->open();
-  if(!clientp) {
+  if(clientp != NULL) {
+    transport->open();
     retval = clientp->remove_node_rep(node);
     if(retval == -1) {
       printf("No enough storage (remote) in remove_node_rep, remove failed\n");
@@ -62,8 +62,8 @@ int32_t InterNodeCommHandler::remove_node_rep(int32_t node)
       transport->close();
       return 0;
     }
+    transport->close();
   }
-  transport->close();
 
   vector<u64> nodes;
   nodes.push_back((u64)node);
@@ -89,8 +89,8 @@ int32_t InterNodeCommHandler::remove_node_rep(int32_t node)
 int32_t InterNodeCommHandler::add_edge_rep(int32_t node1, int32_t node2) 
 {
   int32_t retval;
-  transport->open();
-  if(!clientp) {
+  if(clientp != NULL) {
+    transport->open();
     retval = clientp->add_edge_rep(node1, node2);
     if(retval == -2) {
       printf("No enough storage (remote) in add_edge_rep, add failed\n");
@@ -107,8 +107,8 @@ int32_t InterNodeCommHandler::add_edge_rep(int32_t node1, int32_t node2)
       transport->close();
       return 0;
     }
+    transport->close();
   }
-  transport->close();
 
   vector<u64> nodes;
   nodes.push_back((u64)node1);
@@ -141,8 +141,8 @@ int32_t InterNodeCommHandler::add_edge_rep(int32_t node1, int32_t node2)
 int32_t InterNodeCommHandler::remove_edge_rep(int32_t node1, int32_t node2)
 {
   int32_t retval;
-  transport->open();
-  if(!clientp) {
+  if(clientp != NULL) {
+    transport->open();
     retval = clientp->remove_edge_rep(node1, node2);
     if(retval == -1) {
       printf("No enough storage (remote) in remove_edge_rep, remove failed\n");
@@ -154,8 +154,8 @@ int32_t InterNodeCommHandler::remove_edge_rep(int32_t node1, int32_t node2)
       transport->close();
       return 0;
     }
+    transport->close();
   }
-  transport->close();
 
   vector<u64> nodes;
   nodes.push_back((u64)node1);
@@ -179,16 +179,16 @@ int32_t InterNodeCommHandler::remove_edge_rep(int32_t node1, int32_t node2)
 int32_t InterNodeCommHandler::checkpoint_rep() 
 {
   int32_t retval;
-  transport->open();
   if(!clientp) {
+    transport->open();
     retval = clientp->checkpoint_rep();
     if(retval == -1) {
       printf("No enough storage (remote) for check point in checkpoint_rep\n");
       transport->close();
       return -1;
     }
+    transport->close();
   }
-  transport->close();
   retval = storageLog.checkpoint(storageLog.fd);
   if(retval == -1) {
       printf("No enough storage (local) for check point in checkpoint_rep\n");
