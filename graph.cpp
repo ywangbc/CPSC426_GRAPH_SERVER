@@ -580,11 +580,11 @@ int main(int argc, char* argv[]) {
   fp = fopen("local_out", "w");
 
   std::thread mongoose_thread(mongoose_start);
-  std::thread thrift_thread(thrift_start, slave_addr, slave_port);
-
+  //std::thread thrift_thread(thrift_start, slave_addr, slave_port);
+  thrift_start(slave_addr, slave_port);
 
   mongoose_thread.join();
-  thrift_thread.join();
+  //thrift_thread.join();
   
   /*
   for (;;) {
