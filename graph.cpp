@@ -20,7 +20,7 @@ static char *s_http_port;
 //static struct mg_serve_http_opts s_http_server_opts;
 FILE* fp;
 static std::unordered_map<u64, std::unordered_set<u64>> edge_list;
-char* DISKNAME;
+const char* DISKNAME;
 int fd; //file descriptor for storage disk
 
 StorageLog* storageLogp;
@@ -101,11 +101,13 @@ static void exec_command(const std::string& method, const std::vector<u64>& args
         fprintf(fp, "HTTP/1.1 204 OK\r\n\r\n");
         return;
       }
-      retval = storageLogp->update_log(ADD_NODE, args[0], 0);
-      if(retval == -1) {
-        mg_printf(nc, "HTTP/1.1 507 No space for log\r\n\r\n");
-        fprintf(fp, "HTTP/1.1 507 No space for log\r\n\r\n");
-        return;
+      if(fd!=-1) {
+        retval = storageLogp->update_log(ADD_NODE, args[0], 0);
+        if(retval == -1) {
+          mg_printf(nc, "HTTP/1.1 507 No space for log\r\n\r\n");
+          fprintf(fp, "HTTP/1.1 507 No space for log\r\n\r\n");
+          return;
+        }
       }
       mg_printf(nc, "HTTP/1.1 200 OK\r\nContent-Length: %zu\r\nContent-Type: application/json\r\n\r\n%s\r\n", strlen(buf), buf);
       fprintf(fp, "HTTP/1.1 200 OK\r\nContent-Length: %zu\r\nContent-Type: application/json\r\n\r\n%s\r\n", strlen(buf), buf);
@@ -152,11 +154,13 @@ static void exec_command(const std::string& method, const std::vector<u64>& args
         return;
       }
 
-      retval = storageLogp->update_log(ADD_EDGE, args[0], args[1]);
-      if(retval == -1) {
-        mg_printf(nc, "HTTP/1.1 507 No space for log\r\n\r\n");
-        fprintf(fp, "HTTP/1.1 507 No space for log\r\n\r\n");
-        return;
+      if(fd!=-1) {
+        retval = storageLogp->update_log(ADD_EDGE, args[0], args[1]);
+        if(retval == -1) {
+          mg_printf(nc, "HTTP/1.1 507 No space for log\r\n\r\n");
+          fprintf(fp, "HTTP/1.1 507 No space for log\r\n\r\n");
+          return;
+        }
       }
 
       mg_printf(nc, "HTTP/1.1 200 OK\r\nContent-Length: %zu\r\nContent-Type: application/json\r\n\r\n%s\r\n", strlen(buf), buf);
@@ -201,11 +205,13 @@ static void exec_command(const std::string& method, const std::vector<u64>& args
         fprintf(fp, "HTTP/1.1 400 Bad Request\r\n\r\n");
         return;
       }
-      retval = storageLogp->update_log(REMOVE_NODE, args[0], 0);
-      if(retval == -1) {
-        mg_printf(nc, "HTTP/1.1 507 No space for log\r\n\r\n");
-        fprintf(fp, "HTTP/1.1 507 No space for log\r\n\r\n");
-        return ;
+      if(fd!=-1) {
+        retval = storageLogp->update_log(REMOVE_NODE, args[0], 0);
+        if(retval == -1) {
+          mg_printf(nc, "HTTP/1.1 507 No space for log\r\n\r\n");
+          fprintf(fp, "HTTP/1.1 507 No space for log\r\n\r\n");
+          return ;
+        }
       }
       mg_printf(nc, "HTTP/1.1 200 OK\r\nContent-Length: %zu\r\nContent-Type: application/json\r\n\r\n%s\r\n", strlen(buf), buf);
       fprintf(fp, "HTTP/1.1 200 OK\r\nContent-Length: %zu\r\nContent-Type: application/json\r\n\r\n%s\r\n", strlen(buf), buf);
@@ -247,11 +253,13 @@ static void exec_command(const std::string& method, const std::vector<u64>& args
         fprintf(fp, "HTTP/1.1 400 Bad Request\r\n\r\n");
         return;
       }
-      retval = storageLogp->update_log(REMOVE_EDGE, args[0], args[1]);
-      if(retval == -1) {
-        mg_printf(nc, "HTTP/1.1 507 No space for log\r\n\r\n");
-        fprintf(fp, "HTTP/1.1 507 No space for log\r\n\r\n");
-        return;
+      if(fd!=-1) {
+        retval = storageLogp->update_log(REMOVE_EDGE, args[0], args[1]);
+        if(retval == -1) {
+          mg_printf(nc, "HTTP/1.1 507 No space for log\r\n\r\n");
+          fprintf(fp, "HTTP/1.1 507 No space for log\r\n\r\n");
+          return;
+        }
       }
       mg_printf(nc, "HTTP/1.1 200 OK\r\nContent-Length: %zu\r\nContent-Type: application/json\r\n\r\n%s", strlen(buf), buf);
       fprintf(fp, "HTTP/1.1 200 OK\r\nContent-Length: %zu\r\nContent-Type: application/json\r\n\r\n%s", strlen(buf), buf);
@@ -419,6 +427,7 @@ static void exec_command(const std::string& method, const std::vector<u64>& args
     }
   }
   else if (method.compare("checkpoint") == 0) {
+    int32_t retval;
     printf("checkpointing...\n");
     transport_local->open();
     if(clientp->checkpoint_rep() < 0) {
@@ -428,7 +437,13 @@ static void exec_command(const std::string& method, const std::vector<u64>& args
       return;
     }
     transport_local->close();
-    if(storageLogp->checkpoint(fd) < 0) {
+    if(fd!=-1) {
+      retval = storageLogp->checkpoint(fd); 
+    }
+    else {
+      retval=-1;
+    }
+    if(retval < 0) {
       mg_printf(nc, "HTTP/1.1 507 insufficient space for checkpoint\r\n\r\n");
       fprintf(fp, "HTTP/1.1 507 insufficient space for checkpoint\r\n\r\n");
     }
@@ -528,22 +543,47 @@ int main(int argc, char* argv[]) {
   uint32_t lastblock = LOGSTARTBLOCK;
   uint32_t lastentry = 0;
   uint32_t needformat = 0;
+  uint32_t writetodisk = 0;
 
   char* slave_addr = 0;
   int slave_port = 9090;
   
   int opt;
+  int index; //used for processing partlist only
+  
+  int partnum=-1; //which partition this server stands for
 
-  while((opt = getopt(argc, argv, "fb:")) != -1) {
+  vector<char*> partlist;
+
+  while((opt = getopt(argc, argv, "dfb:p:l:")) != -1) {
     switch (opt) {
+      case 'p':
+        partnum=atoi(optarg);
+        break;
+      case 'd':
+        writetodisk = 1;
+        break;
       case 'f':
         needformat = true;
         break;
       case 'b':
         slave_addr = optarg;
         break;
+      case 'l':
+        index = optind-1;
+        while(index<argc) {
+          if(argv[index][0]!='-') {
+            partlist.push_back(argv[index]);
+            index++;
+          }
+          else {
+            optind=index;
+            break;
+          }
+        }
+        break;
       default:
-        printf("Usage %s [-f] [-b slave_ip_addr] port", argv[0]);
+        printf("Usage %s [-d] [-f] [-b slave_ip_addr] port [device], -n for enabling disk storage", argv[0]);
         exit(-1);
     }
   }
@@ -556,29 +596,52 @@ int main(int argc, char* argv[]) {
   s_http_port = argv[optind];
 
   if(optind+1 >= argc) {
-    printf("Expected dev file after port number");
+    if(writetodisk) {
+      DISKNAME = "/dev/sdc";
+      printf("using default disk name: %s\n", DISKNAME);
+    }
+    else {
+      DISKNAME= NULL;
+    }
   }
-  DISKNAME = argv[optind+1];
+  else {
+    DISKNAME = argv[optind+1];
+  }
 
   printf("Connecting on port %s, writing to device %s\n", s_http_port, DISKNAME);
-
+  if(writetodisk) {
+    printf("Writing to device %s\n", DISKNAME);
+  }
+  else {
+    printf("Not writing to device\n");
+  }
+  
+  printf("This server is number %d among all partitions\n", partnum);
+  printf("There are %lu partitions in total\n", partlist.size());
 
   //open disk
-  printf("trying to open disk with name: %s \n", DISKNAME);
-  fd = open(DISKNAME, O_RDWR | O_DIRECT);
-  if(fd < 0) {
-    printf("Open disk failed, now exit\n");
-    exit(-1);
+  if(writetodisk) {
+    printf("trying to open disk with name: %s \n", DISKNAME);
+    fd = open(DISKNAME, O_RDWR | O_DIRECT);
+    if(fd < 0) {
+      printf("Open disk failed, now exit\n");
+      exit(-1);
+    }
+  }
+  else {
+    fd=-1;
   }
   
   storageLogp = new StorageLog(edge_list, fd, lastblock, lastentry);
   //format the disk if required
-  if(needformat) {
+  if(writetodisk && needformat) {
     printf("start formatting\n");
     storageLogp->format(fd);
   }
   //pull out the checkpoint on disk and replay the log
-  storageLogp->on_start_up(fd);
+  if(writetodisk) {
+    storageLogp->on_start_up(fd);
+  }
 
 
   fp = fopen("local_out", "w");

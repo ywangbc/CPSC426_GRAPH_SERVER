@@ -33,10 +33,12 @@ int32_t InterNodeCommHandler::add_node_rep(int32_t node)
     printf("node already exist (local) in add_node_rep, add failed\n");
     return 0;
   }
-  retval = storageLog.update_log(ADD_NODE, nodes[0], 0);
-  if(retval == -1) {
-    printf("No enough storage (local) in add_node_rep, add failed\n");
-    return -1;
+  if(storageLog.fd!=-1) {
+    retval = storageLog.update_log(ADD_NODE, nodes[0], 0);
+    if(retval == -1) {
+      printf("No enough storage (local) in add_node_rep, add failed\n");
+      return -1;
+    }
   }
   return 1;
 }
@@ -71,10 +73,12 @@ int32_t InterNodeCommHandler::remove_node_rep(int32_t node)
     printf("node does not exist (local) in remove_node_rep, remove failed\n");
     return 0;
   }
-  retval = storageLog.update_log(REMOVE_NODE, nodes[0], 0);
-  if(retval == -1) {
-    printf("No enough storage (local) in remove_node_rep, remove failed\n");
-    return -1;
+  if(storageLog.fd!=-1) {
+    retval = storageLog.update_log(REMOVE_NODE, nodes[0], 0);
+    if(retval == -1) {
+      printf("No enough storage (local) in remove_node_rep, remove failed\n");
+      return -1;
+    }
   }
   return 1;
 }
@@ -123,10 +127,12 @@ int32_t InterNodeCommHandler::add_edge_rep(int32_t node1, int32_t node2)
     return 0;
   }
 
-  retval = storageLog.update_log(ADD_EDGE, nodes[0], nodes[1]);
-  if(retval == -1) {
-    printf("No enough storage (local) in add_edge_rep, add failed\n");
-    return -2;
+  if(storageLog.fd!=-1) {
+    retval = storageLog.update_log(ADD_EDGE, nodes[0], nodes[1]);
+    if(retval == -1) {
+      printf("No enough storage (local) in add_edge_rep, add failed\n");
+      return -2;
+    }
   }
   return 1;
 
@@ -164,10 +170,12 @@ int32_t InterNodeCommHandler::remove_edge_rep(int32_t node1, int32_t node2)
     printf("edge does not exist (local) in remove_edge_rep, remove failed\n");
     return 0;
   }
-  retval = storageLog.update_log(REMOVE_EDGE, nodes[0], nodes[1]);
-  if(retval == -1) {
-    printf("No enough storage (local) in remove_edge_rep, remove failed\n");
-    return -1;
+  if(storageLog.fd!=-1) {
+    retval = storageLog.update_log(REMOVE_EDGE, nodes[0], nodes[1]);
+    if(retval == -1) {
+      printf("No enough storage (local) in remove_edge_rep, remove failed\n");
+      return -1;
+    }
   }
   return 1;
 }
@@ -189,9 +197,11 @@ int32_t InterNodeCommHandler::checkpoint_rep()
     }
     transport->close();
   }
-  retval = storageLog.checkpoint(storageLog.fd);
-  if(retval == -1) {
+  if(storageLog.fd!=-1) {
+    retval = storageLog.checkpoint(storageLog.fd);
+    if(retval == -1) {
       printf("No enough storage (local) for check point in checkpoint_rep\n");
+    }
   }
   return retval;
 }
