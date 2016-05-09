@@ -3,14 +3,17 @@
 
 bool add_node(std::unordered_map<u64, std::unordered_set<u64>>& edge_list, const std::vector<u64>& args)
 {
+  my_graph_mutex.lock();
   //printf("In add_node\n");
   if(edge_list.find(args[0]) != edge_list.end())
   {
+    my_graph_mutex.unlock();
     return false;
   }
   else
   {
     edge_list[args[0]];   
+    my_graph_mutex.unlock();
     return true;
   }
 }
@@ -18,6 +21,7 @@ bool add_node(std::unordered_map<u64, std::unordered_set<u64>>& edge_list, const
 /* return 1 on success
  * return 0 if edge already exist
  * return -1 if node_a_id = node_b_id or, or node does not exist
+ * Notice this method can only be called in add_edge_remote, so it does not handle lock
  * */
 int add_edge(std::unordered_map<u64, std::unordered_set<u64>>& edge_list, const std::vector<u64>& args)
 {
@@ -48,13 +52,116 @@ int add_edge(std::unordered_map<u64, std::unordered_set<u64>>& edge_list, const 
     }
   }
 }
+/*********************************************
+ * @param:
+ *  partsize is the total number of partitions
+ * @return
+ *  true if vertex belongs to partnum
+ *********************************************/
+bool isMine(u64 partnum, u64 partsize, u64 vNum) {
+  return vNum%partsize==partnum;
+} 
+
+/*********************************************
+ * @param
+ *  localu: a vertex known to be on local
+ *  remotev: a vertex known to be on remote
+ *********************************************/
+void add_edge_local(std::unordered_map<u64, std::unordered_set<u64>>& edge_list, u64 localu, u64 remotev) 
+{
+   edge_list[localu].insert(remotev);
+}
+
+/* return 1 on success
+ * return 0 if edge already exist
+ * return -1 if node_a_id = node_b_id or, or node does not exist
+ * return -2 if no enough storage on remote
+ * */
+int add_edge_remote(u64 partnum, u64 partsize, boost::shared_ptr<apache::thrift::transport::TTransport> transport_local,boost::shared_ptr<InterNodeCommClient> clientp, std::unordered_map<u64, std::unordered_set<u64>>& edge_list, const std::vector<u64>& args)
+{
+  int retval;
+  if(isMine(partnum, partsize, args[0]) && isMine(partnum, partsize, args[1])) {
+    my_graph_mutex.lock();
+    retval = add_edge(edge_list, args);
+    my_graph_mutex.unlock();
+    return retval;
+  }
+  u64 localu, remotev;
+  if(isMine(partnum, partsize, args[0])) {
+    localu = args[0];
+    remotev = args[1];
+  }
+  else if(isMine(partnum, partsize, args[1])) {
+    localu = args[1];
+    remotev = args[0];
+  }
+  else { //both vertices do not belong to this node, illegal operation
+    return -1;
+  }
+
+  my_graph_mutex.lock();
+
+  if(edge_list.find(localu) == edge_list.end())
+  {
+    my_graph_mutex.unlock();
+    return -1;
+  }
+  else
+  {
+    if(edge_list[localu].find(remotev) != edge_list[localu].end())
+    {
+      my_graph_mutex.unlock();
+      return 0;
+    }
+    else
+    {
+      transport_local->open();
+      retval = clientp->add_edge_rep(localu, remotev); //always pass in order [local, remote]
+      transport_local->close();
+      if(retval != 1) {
+        my_graph_mutex.unlock();
+        return retval;
+      }
+      add_edge_local(edge_list, localu, remotev);
+      my_graph_mutex.unlock();
+      return 1;
+    }
+  }
+}
+
+int32_t add_edge_rep_local(std::unordered_map<u64, std::unordered_set<u64>>& edge_list, int32_t remotev, int32_t localu)
+{
+  my_graph_mutex.lock();
+
+  if(edge_list.find(localu) == edge_list.end())
+  {
+    my_graph_mutex.unlock();
+    return -1;
+  }
+  else
+  {
+    if(edge_list[localu].find(remotev) != edge_list[localu].end())
+    {
+      my_graph_mutex.unlock();
+      return 0;
+    }
+    else
+    {
+      add_edge_local(edge_list, localu, remotev);
+      my_graph_mutex.unlock();
+      return 1;
+    }
+  }
+}
 
 //return false if remove failed, true if success
 bool remove_node(std::unordered_map<u64, std::unordered_set<u64>>& edge_list, const std::vector<u64>& args)
 {
   //printf("In remove_node\n");
+  my_graph_mutex.lock();
   if(edge_list.find(args[0]) == edge_list.end())
   {
+    my_graph_mutex.unlock();
     return false;
   }
   else
@@ -65,35 +172,121 @@ bool remove_node(std::unordered_map<u64, std::unordered_set<u64>>& edge_list, co
       edge_list[*it].erase(args[0]);
     }
     edge_list.erase(args[0]);
+    my_graph_mutex.unlock();
     return true;
   }
 }
 
-/* return true on success
- * return false if edge does not exist 
+/* @return
+ *  1 on success
+ *  0 if edge or node does not exist 
+ * Notice this method can only be called in remove_edge_remote, so it does not handle lock
  */
-bool remove_edge(std::unordered_map<u64, std::unordered_set<u64>>& edge_list, const std::vector<u64>& args)
+int32_t remove_edge(std::unordered_map<u64, std::unordered_set<u64>>& edge_list, const std::vector<u64>& args)
 {
   //printf("In remove_edge\n");
   if(edge_list.find(args[0]) == edge_list.end())
   {
-    return false;
+    return 0;
   }
   else if(edge_list.find(args[1]) == edge_list.end())
   {
-    return false;
+    return 0;
   }
   else
   {
     if(edge_list[args[0]].find(args[1]) == edge_list[args[0]].end())
     {
-      return false;
+      return 1;
     }
     else
     {
       edge_list[args[0]].erase(args[1]);
       edge_list[args[1]].erase(args[0]);
-      return true;
+      return 1;
+    }
+  }
+}
+/*********************************************
+ * @param
+ *  localu: a vertex known to be on local
+ *  remotev: a vertex known to be on remote
+ *********************************************/
+void remove_edge_local(std::unordered_map<u64, std::unordered_set<u64>>& edge_list, u64 localu, u64 remotev) 
+{
+   edge_list[localu].erase(remotev);
+}
+
+/* @return 
+ *  1 on success
+ *  0 if edge already exist
+ *  -1 if no enough storage
+ * */
+int32_t remove_edge_remote(u64 partnum, u64 partsize, boost::shared_ptr<apache::thrift::transport::TTransport> transport_local,boost::shared_ptr<InterNodeCommClient> clientp, std::unordered_map<u64, std::unordered_set<u64>>& edge_list, const std::vector<u64>& args)
+{
+  int32_t retval;
+  if(isMine(partnum, partsize, args[0]) && isMine(partnum, partsize, args[1])) {
+    my_graph_mutex.lock();
+    retval = remove_edge(edge_list, args);
+    my_graph_mutex.unlock();
+    return retval;
+  }
+  u64 localu, remotev;
+  if(isMine(partnum, partsize, args[0])) {
+    localu = args[0];
+    remotev = args[1];
+  }
+  else if(isMine(partnum, partsize, args[1])) {
+    localu = args[1];
+    remotev = args[0];
+  }
+  else { //both vertices do not belong to this node, illegal operation
+    return 0;
+  }
+
+  my_graph_mutex.lock();
+
+  if(edge_list.find(localu) == edge_list.end())
+  {
+    my_graph_mutex.unlock();
+    return 0;
+  }
+  else
+  {
+    transport_local->open();
+    retval = clientp->remove_edge_rep(localu, remotev); //always pass in order [local, remote]
+    transport_local->close();
+    if(retval != 1) {
+      my_graph_mutex.unlock();
+      return retval;
+    }
+    remove_edge_local(edge_list, localu, remotev);
+    my_graph_mutex.unlock();
+    return 1;
+  }
+}
+
+int32_t remove_edge_rep_local(std::unordered_map<u64, std::unordered_set<u64>>& edge_list, int32_t remotev, int32_t localu)
+{
+  my_graph_mutex.lock();
+
+  if(edge_list.find(localu) == edge_list.end())
+  {
+    my_graph_mutex.unlock();
+    return 0;
+  }
+  else
+  {
+    if(edge_list[localu].find(remotev) == edge_list[localu].end())
+    {
+      my_graph_mutex.unlock();
+      return 0;
+    }
+    else
+    {
+      remove_edge_local(edge_list, localu, remotev);
+      my_graph_mutex.unlock();
+      return 1;
     }
   }
 }
@@ -104,12 +297,15 @@ bool remove_edge(std::unordered_map<u64, std::unordered_set<u64>>& edge_list, co
 bool get_node(std::unordered_map<u64, std::unordered_set<u64>>& edge_list, const std::vector<u64>& args)
 {
   //printf("In get_node\n");
+  my_graph_mutex.lock();
   if(edge_list.find(args[0]) == edge_list.end())
   {
+    my_graph_mutex.unlock();
     return false;
   }
   else
   {
+    my_graph_mutex.unlock();
     return true;
   }
 }
@@ -118,23 +314,45 @@ bool get_node(std::unordered_map<u64, std::unordered_set<u64>>& edge_list, const
  * return 0 if the edge is not in the graph
  * if any of the node is not in the graph, return -1
  */
-int get_edge(std::unordered_map<u64, std::unordered_set<u64>>& edge_list, const std::vector<u64>& args)
+int get_edge(boost::shared_ptr<apache::thrift::transport::TTransport> transport_local,boost::shared_ptr<InterNodeCommClient> clientp, u64 partnum, u64 partsize, std::unordered_map<u64, std::unordered_set<u64>>& edge_list, const std::vector<u64>& args)
 {
+  //Here remotev is not necessarily remote, we only need to ensure localu is local
+  u64 localu, remotev;
+  if(isMine(partnum, partsize, args[0])) {
+    localu = args[0];
+    remotev = args[1]; 
+  }
+  else if(isMine(partnum, partsize, args[1])) {
+    localu = args[1];
+    remotev = args[0];
+  }
+  else { //both vertices do not belong to this partition, illegal operation
+    return -1;
+  }
+
   //printf("In get_edge\n");
-  if(edge_list.find(args[0]) == edge_list.end())
-  {
+  my_graph_mutex.lock();
+  int32_t rep;
+  transport_local->open();
+  rep = clientp->get_node_rep(remotev);
+  transport_local->close();
+  if(rep == 0) {
+    my_graph_mutex.unlock();
     return -1;
   }
-  else if(edge_list.find(args[1]) == edge_list.end())
+  if(edge_list.find(localu) == edge_list.end())
   {
+    my_graph_mutex.unlock();
     return -1;
   }
-  else if(edge_list[args[0]].find(args[1]) == edge_list[args[0]].end())
+  else if(edge_list[localu].find(remotev) == edge_list[localu].end())
   {
+    my_graph_mutex.unlock();
     return 0;
   }
   else //The edge exist
   {
+    my_graph_mutex.unlock();
     return 1;
   }
 }
@@ -144,14 +362,17 @@ int get_edge(std::unordered_map<u64, std::unordered_set<u64>>& edge_list, const 
  */
 bool get_neighbors(std::unordered_map<u64, std::unordered_set<u64>>& edge_list, const std::vector<u64>& args, std::vector<u64>& list)
 {
+  my_graph_mutex.lock();
   //printf("In get_neighbors\n");
   if(edge_list.find(args[0]) == edge_list.end())
   {
+    my_graph_mutex.unlock();
     return false;
   }
   else
   {
     list.insert(list.end(), edge_list[args[0]].begin(), edge_list[args[0]].end());
+    my_graph_mutex.unlock();
     return true;
   }
 }
@@ -163,12 +384,15 @@ bool get_neighbors(std::unordered_map<u64, std::unordered_set<u64>>& edge_list, 
 int shortest_path(std::unordered_map<u64, std::unordered_set<u64>>& edge_list, const std::vector<u64>& args)
 {
   //printf("In shortest_path\n");
+  my_graph_mutex.lock();
   if(edge_list.find(args[0]) == edge_list.end())
   {
+    my_graph_mutex.unlock();
     return -2;
   }
   else if(edge_list.find(args[1]) == edge_list.end())
   {
+    my_graph_mutex.unlock();
     return -2;
   }
   
@@ -183,6 +407,7 @@ int shortest_path(std::unordered_map<u64, std::unordered_set<u64>>& edge_list, c
     dijkq.pop();
     if(cur.first == args[1])
     {
+      my_graph_mutex.unlock();
       return cur.second;
     }
     std::unordered_set<u64>::iterator it;
@@ -199,6 +424,7 @@ int shortest_path(std::unordered_map<u64, std::unordered_set<u64>>& edge_list, c
        }
     }
   } 
+  my_graph_mutex.unlock();
   return -1;
 }
 

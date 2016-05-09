@@ -1,4 +1,17 @@
 #include "internodecommhandler.h"
+
+/***************
+ * get_node_rep
+ * return 1 if node is in graph
+ * return 0 if node is not in graph
+ ***********************/
+int32_t InterNodeCommHandler::get_node_rep(int32_t node) 
+{
+  vector<u64> nodes;
+  nodes.push_back((u64)node);
+  return get_node(storageLog.edge_list, nodes);
+}
+
 /***************
  * add_node_rep
  * return 1 on success
@@ -50,6 +63,7 @@ int32_t InterNodeCommHandler::add_node_rep(int32_t node)
  ***********************/
 int32_t InterNodeCommHandler::remove_node_rep(int32_t node) 
 {
+  /*
   int32_t retval;
   if(clientp != NULL) {
     transport->open();
@@ -73,13 +87,14 @@ int32_t InterNodeCommHandler::remove_node_rep(int32_t node)
     printf("node does not exist (local) in remove_node_rep, remove failed\n");
     return 0;
   }
-  if(storageLog.fd!=-1) {
+  if(storageLog.fd!=-1) 
     retval = storageLog.update_log(REMOVE_NODE, nodes[0], 0);
     if(retval == -1) {
       printf("No enough storage (local) in remove_node_rep, remove failed\n");
       return -1;
     }
   }
+  */
   return 1;
 }
 
@@ -90,9 +105,24 @@ int32_t InterNodeCommHandler::remove_node_rep(int32_t node)
  * return -1 on node_a_id == node_b_id or node does not exist
  * return -2 on no enough storage at remote or local
  ***********************/
-int32_t InterNodeCommHandler::add_edge_rep(int32_t node1, int32_t node2) 
+int32_t InterNodeCommHandler::add_edge_rep(int32_t remotev, int32_t localu) 
 {
   int32_t retval;
+  retval = add_edge_rep_local(storageLog.edge_list, remotev, localu);
+  if(retval!=1) {
+    return retval;
+  }
+
+  if(storageLog.fd!=-1) {
+    retval = storageLog.update_log(ADD_EDGE, localu, remotev);
+    if(retval == -1) {
+      printf("No enough storage (local) in remove_node_rep, remove failed\n");
+      return -2;
+    }
+  }
+  return 1;
+}
+/*
   if(clientp != NULL) {
     transport->open();
     retval = clientp->add_edge_rep(node1, node2);
@@ -135,17 +165,31 @@ int32_t InterNodeCommHandler::add_edge_rep(int32_t node1, int32_t node2)
     }
   }
   return 1;
-
-}
+*/
 
 /***************
  * remove_edge_rep
  * return 1 on success
- * return 0 on node does not exist
+ * return 0 on node or edge does not exist
  * return -1 on no enough storage at remote or local
  ***********************/
-int32_t InterNodeCommHandler::remove_edge_rep(int32_t node1, int32_t node2)
+int32_t InterNodeCommHandler::remove_edge_rep(int32_t remotev, int32_t localu)
 {
+  int32_t retval;
+  retval = remove_edge_rep_local(storageLog.edge_list, remotev, localu);
+  if(retval!=1) {
+    return retval;
+  }
+
+  if(storageLog.fd!=-1) {
+    retval = storageLog.update_log(REMOVE_EDGE, localu, remotev);
+    if(retval == -1) {
+      printf("No enough storage (local) in remove_node_rep, remove failed\n");
+      return -1;
+    }
+  }
+  return 1;
+  /*
   int32_t retval;
   if(clientp != NULL) {
     transport->open();
@@ -178,6 +222,7 @@ int32_t InterNodeCommHandler::remove_edge_rep(int32_t node1, int32_t node2)
     }
   }
   return 1;
+  */
 }
 /***********************************************
  * checkpoint_rep

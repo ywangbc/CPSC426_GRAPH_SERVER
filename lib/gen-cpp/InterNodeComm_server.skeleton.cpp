@@ -20,6 +20,11 @@ class InterNodeCommHandler : virtual public InterNodeCommIf {
     // Your initialization goes here
   }
 
+  int32_t get_node_rep(const int32_t node) {
+    // Your implementation goes here
+    printf("get_node_rep\n");
+  }
+
   int32_t add_node_rep(const int32_t node) {
     // Your implementation goes here
     printf("add_node_rep\n");

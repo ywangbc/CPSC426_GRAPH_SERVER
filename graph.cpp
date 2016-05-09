@@ -23,6 +23,9 @@ static std::unordered_map<u64, std::unordered_set<u64>> edge_list;
 const char* DISKNAME;
 int fd; //file descriptor for storage disk
 
+int partnum=-1; //which partition this server stands for
+vector<char*> partlist;
+
 StorageLog* storageLogp;
 boost::shared_ptr<TTransport> socket_local;
 boost::shared_ptr<TTransport> transport_local;
@@ -81,12 +84,30 @@ static void exec_command(const std::string& method, const std::vector<u64>& args
     }
     //handle response
     unsigned int count;
+    int32_t retval;
     count = json_emit(buf, sizeof(buf), "{ s: i }", "node_id", (long)args[0]);
     if(count > sizeof(buf))
     {
       fprintf(fp, "add_node json exceeded buf size\n");
     }
 
+    if(!add_node(edge_list, args)) {
+      mg_printf(nc, "HTTP/1.1 204 OK\r\n\r\n");
+      fprintf(fp, "HTTP/1.1 204 OK\r\n\r\n");
+      return;
+    }
+    if(fd!=-1) {
+      retval = storageLogp->update_log(ADD_NODE, args[0], 0);
+      if(retval == -1) {
+        mg_printf(nc, "HTTP/1.1 507 No space for log\r\n\r\n");
+        fprintf(fp, "HTTP/1.1 507 No space for log\r\n\r\n");
+        return;
+      }
+    }
+    mg_printf(nc, "HTTP/1.1 200 OK\r\nContent-Length: %zu\r\nContent-Type: application/json\r\n\r\n%s\r\n", strlen(buf), buf);
+    fprintf(fp, "HTTP/1.1 200 OK\r\nContent-Length: %zu\r\nContent-Type: application/json\r\n\r\n%s\r\n", strlen(buf), buf);
+    fprintf(fp, "\n\n");
+/*
     if(!clientp) {
       printf("clientp is null! This is tail and shall not receive such command!\n");
       return;
@@ -121,6 +142,7 @@ static void exec_command(const std::string& method, const std::vector<u64>& args
       mg_printf(nc, "HTTP/1.1 507 No space for log\r\n\r\n");
       fprintf(fp, "HTTP/1.1 507 No space for log\r\n\r\n");
     }
+*/
   }
   else if(method.compare("add_edge")==0)
   {
@@ -138,6 +160,36 @@ static void exec_command(const std::string& method, const std::vector<u64>& args
     }
 
     int32_t retval;
+    retval = add_edge_remote((u64)partnum, (u64)partlist.size(), transport_local, clientp, edge_list, args);
+    if(retval == -1) {
+      mg_printf(nc, "HTTP/1.1 400 Bad Request\r\n\r\n");
+      fprintf(fp, "HTTP/1.1 400 Bad Request\r\n\r\n");
+      return;
+    }
+    else if(retval == 0) {
+      mg_printf(nc, "HTTP/1.1 204 OK\r\n\r\n");
+      fprintf(fp, "HTTP/1.1 204 OK\r\n\r\n");
+      return;
+    }
+    else if(retval == -2) {
+      mg_printf(nc, "HTTP/1.1 507 No space for log\r\n\r\n");
+      fprintf(fp, "HTTP/1.1 507 No space for log\r\n\r\n");
+      return;
+    }
+
+    if(fd!=-1) {
+      retval = storageLogp->update_log(ADD_EDGE, args[0], args[1]);
+      if(retval == -1) {
+        mg_printf(nc, "HTTP/1.1 507 No space for log\r\n\r\n");
+        fprintf(fp, "HTTP/1.1 507 No space for log\r\n\r\n");
+        return;
+      }
+    }
+
+    mg_printf(nc, "HTTP/1.1 200 OK\r\nContent-Length: %zu\r\nContent-Type: application/json\r\n\r\n%s\r\n", strlen(buf), buf);
+    fprintf(fp, "HTTP/1.1 200 OK\r\nContent-Length: %zu\r\nContent-Type: application/json\r\n\r\n%s\r\n", strlen(buf), buf);
+    fprintf(fp, "\n\n");
+/*
     transport_local->open();
     retval = clientp->add_edge_rep((int32_t)args[0], (int32_t)args[1]);
     transport_local->close();
@@ -179,6 +231,7 @@ static void exec_command(const std::string& method, const std::vector<u64>& args
       mg_printf(nc, "HTTP/1.1 507 No space for log\r\n\r\n");
       fprintf(fp, "HTTP/1.1 507 No space for log\r\n\r\n");
     }
+*/
   }
   else if(method.compare("remove_node")==0)
   {
@@ -196,6 +249,24 @@ static void exec_command(const std::string& method, const std::vector<u64>& args
     }
 
     int32_t retval;
+
+    if(!remove_node(edge_list, args)) {
+      mg_printf(nc, "HTTP/1.1 400 Bad Request\r\n\r\n");
+      fprintf(fp, "HTTP/1.1 400 Bad Request\r\n\r\n");
+      return;
+    }
+    if(fd!=-1) {
+      retval = storageLogp->update_log(REMOVE_NODE, args[0], 0);
+      if(retval == -1) {
+        mg_printf(nc, "HTTP/1.1 507 No space for log\r\n\r\n");
+        fprintf(fp, "HTTP/1.1 507 No space for log\r\n\r\n");
+        return ;
+      }
+    }
+    mg_printf(nc, "HTTP/1.1 200 OK\r\nContent-Length: %zu\r\nContent-Type: application/json\r\n\r\n%s\r\n", strlen(buf), buf);
+    fprintf(fp, "HTTP/1.1 200 OK\r\nContent-Length: %zu\r\nContent-Type: application/json\r\n\r\n%s\r\n", strlen(buf), buf);
+    fprintf(fp, "\n\n");
+/*    
     transport_local->open();
     retval = clientp->remove_node_rep((int32_t)args[0]);
     transport_local->close();
@@ -225,7 +296,7 @@ static void exec_command(const std::string& method, const std::vector<u64>& args
       mg_printf(nc, "HTTP/1.1 507 No space for log\r\n\r\n");
       fprintf(fp, "HTTP/1.1 507 No space for log\r\n\r\n");
     }
-
+*/
   }
   else if(method.compare("remove_edge")==0)
   {
@@ -242,7 +313,36 @@ static void exec_command(const std::string& method, const std::vector<u64>& args
     {
       fprintf(fp, "add_node json exceeded buf size\n");
     }
+
+    int32_t retval;
+    retval = remove_edge_remote((u64)partnum, (u64)partlist.size(), transport_local, clientp, edge_list, args);
     
+    if(retval == 0) {
+      mg_printf(nc, "HTTP/1.1 400 Bad Request\r\n\r\n");
+      fprintf(fp, "HTTP/1.1 400 Bad Request\r\n\r\n");
+      return;
+    }
+    else if(retval == -1) {
+      mg_printf(nc, "HTTP/1.1 507 No space for log\r\n\r\n");
+      fprintf(fp, "HTTP/1.1 507 No space for log\r\n\r\n");
+      return;
+    }
+
+    if(fd!=-1) {
+      printf("Log file is on in remove_edge\n");
+      retval = storageLogp->update_log(REMOVE_EDGE, args[0], args[1]);
+      if(retval == -1) {
+        mg_printf(nc, "HTTP/1.1 507 No space for log\r\n\r\n");
+        fprintf(fp, "HTTP/1.1 507 No space for log\r\n\r\n");
+        return;
+      }
+    }
+
+    mg_printf(nc, "HTTP/1.1 200 OK\r\nContent-Length: %zu\r\nContent-Type: application/json\r\n\r\n%s", strlen(buf), buf);
+    fprintf(fp, "HTTP/1.1 200 OK\r\nContent-Length: %zu\r\nContent-Type: application/json\r\n\r\n%s", strlen(buf), buf);
+    fprintf(fp, "\n\n");
+    
+    /*
     int32_t retval;
     transport_local->open();
     retval = clientp->remove_edge_rep((int32_t)args[0], (int32_t)args[1]);
@@ -273,6 +373,7 @@ static void exec_command(const std::string& method, const std::vector<u64>& args
       mg_printf(nc, "HTTP/1.1 507 No space for log\r\n\r\n");
       fprintf(fp, "HTTP/1.1 507 No space for log\r\n\r\n");
     }
+    */
 
   }
   else if(method.compare("get_node")==0)
@@ -309,7 +410,7 @@ static void exec_command(const std::string& method, const std::vector<u64>& args
       fprintf(fp, "Number of args does not match in get_edge: %lu \n", args.size());
       return;
     }
-    int status = get_edge(edge_list, args);
+    int status = get_edge(transport_local, clientp, partnum, partlist.size(), edge_list, args);
     unsigned int count;
     if(status == 1)
     {
@@ -532,10 +633,10 @@ void thrift_start(char* slave_addr, int slave_port) {
       boost::make_shared<TBufferedTransportFactory>(),
       boost::make_shared<TBinaryProtocolFactory>());
 
-  cout << "Starting the master slave server...\n";
+  printf("Starting the master slave server on port %d...\n", slave_port);
   server.serve();
 
-  cout << "Done. \n";
+  printf("Done.\n");
 }
 
 int main(int argc, char* argv[]) {
@@ -551,9 +652,6 @@ int main(int argc, char* argv[]) {
   int opt;
   int index; //used for processing partlist only
   
-  int partnum=-1; //which partition this server stands for
-
-  vector<char*> partlist;
 
   while((opt = getopt(argc, argv, "dfb:p:l:")) != -1) {
     switch (opt) {
@@ -583,7 +681,7 @@ int main(int argc, char* argv[]) {
         }
         break;
       default:
-        printf("Usage %s [-d] [-f] [-b slave_ip_addr] port [device], -n for enabling disk storage", argv[0]);
+        printf("Usage %s [-d] [-f] [-b slave_ip_addr] port [device], -d for enabling disk storage", argv[0]);
         exit(-1);
     }
   }
@@ -643,11 +741,15 @@ int main(int argc, char* argv[]) {
     storageLogp->on_start_up(fd);
   }
 
-
   fp = fopen("local_out", "w");
 
   std::thread mongoose_thread(mongoose_start);
   //std::thread thrift_thread(thrift_start, slave_addr, slave_port);
+  slave_addr = strtok(partlist[(partnum+1)%partlist.size()], ":");
+  slave_port = atoi(strtok(NULL, ":"));
+
+  printf("Thrift is connecting to %s at port %d.\n", slave_addr, slave_port);
+
   thrift_start(slave_addr, slave_port);
 
   mongoose_thread.join();

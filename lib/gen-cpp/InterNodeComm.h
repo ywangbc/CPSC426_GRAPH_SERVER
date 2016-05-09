@@ -21,6 +21,7 @@
 class InterNodeCommIf {
  public:
   virtual ~InterNodeCommIf() {}
+  virtual int32_t get_node_rep(const int32_t node) = 0;
   virtual int32_t add_node_rep(const int32_t node) = 0;
   virtual int32_t remove_node_rep(const int32_t node) = 0;
   virtual int32_t add_edge_rep(const int32_t node1, const int32_t node2) = 0;
@@ -55,6 +56,10 @@ class InterNodeCommIfSingletonFactory : virtual public InterNodeCommIfFactory {
 class InterNodeCommNull : virtual public InterNodeCommIf {
  public:
   virtual ~InterNodeCommNull() {}
+  int32_t get_node_rep(const int32_t /* node */) {
+    int32_t _return = 0;
+    return _return;
+  }
   int32_t add_node_rep(const int32_t /* node */) {
     int32_t _return = 0;
     return _return;
@@ -75,6 +80,110 @@ class InterNodeCommNull : virtual public InterNodeCommIf {
     int32_t _return = 0;
     return _return;
   }
+};
+
+typedef struct _InterNodeComm_get_node_rep_args__isset {
+  _InterNodeComm_get_node_rep_args__isset() : node(false) {}
+  bool node :1;
+} _InterNodeComm_get_node_rep_args__isset;
+
+class InterNodeComm_get_node_rep_args {
+ public:
+
+  InterNodeComm_get_node_rep_args(const InterNodeComm_get_node_rep_args&);
+  InterNodeComm_get_node_rep_args& operator=(const InterNodeComm_get_node_rep_args&);
+  InterNodeComm_get_node_rep_args() : node(0) {
+  }
+
+  virtual ~InterNodeComm_get_node_rep_args() throw();
+  int32_t node;
+
+  _InterNodeComm_get_node_rep_args__isset __isset;
+
+  void __set_node(const int32_t val);
+
+  bool operator == (const InterNodeComm_get_node_rep_args & rhs) const
+  {
+    if (!(node == rhs.node))
+      return false;
+    return true;
+  }
+  bool operator != (const InterNodeComm_get_node_rep_args &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const InterNodeComm_get_node_rep_args & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+
+class InterNodeComm_get_node_rep_pargs {
+ public:
+
+
+  virtual ~InterNodeComm_get_node_rep_pargs() throw();
+  const int32_t* node;
+
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+typedef struct _InterNodeComm_get_node_rep_result__isset {
+  _InterNodeComm_get_node_rep_result__isset() : success(false) {}
+  bool success :1;
+} _InterNodeComm_get_node_rep_result__isset;
+
+class InterNodeComm_get_node_rep_result {
+ public:
+
+  InterNodeComm_get_node_rep_result(const InterNodeComm_get_node_rep_result&);
+  InterNodeComm_get_node_rep_result& operator=(const InterNodeComm_get_node_rep_result&);
+  InterNodeComm_get_node_rep_result() : success(0) {
+  }
+
+  virtual ~InterNodeComm_get_node_rep_result() throw();
+  int32_t success;
+
+  _InterNodeComm_get_node_rep_result__isset __isset;
+
+  void __set_success(const int32_t val);
+
+  bool operator == (const InterNodeComm_get_node_rep_result & rhs) const
+  {
+    if (!(success == rhs.success))
+      return false;
+    return true;
+  }
+  bool operator != (const InterNodeComm_get_node_rep_result &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const InterNodeComm_get_node_rep_result & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+typedef struct _InterNodeComm_get_node_rep_presult__isset {
+  _InterNodeComm_get_node_rep_presult__isset() : success(false) {}
+  bool success :1;
+} _InterNodeComm_get_node_rep_presult__isset;
+
+class InterNodeComm_get_node_rep_presult {
+ public:
+
+
+  virtual ~InterNodeComm_get_node_rep_presult() throw();
+  int32_t* success;
+
+  _InterNodeComm_get_node_rep_presult__isset __isset;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+
 };
 
 typedef struct _InterNodeComm_add_node_rep_args__isset {
@@ -624,6 +733,9 @@ class InterNodeCommClient : virtual public InterNodeCommIf {
   boost::shared_ptr< ::apache::thrift::protocol::TProtocol> getOutputProtocol() {
     return poprot_;
   }
+  int32_t get_node_rep(const int32_t node);
+  void send_get_node_rep(const int32_t node);
+  int32_t recv_get_node_rep();
   int32_t add_node_rep(const int32_t node);
   void send_add_node_rep(const int32_t node);
   int32_t recv_add_node_rep();
@@ -654,6 +766,7 @@ class InterNodeCommProcessor : public ::apache::thrift::TDispatchProcessor {
   typedef  void (InterNodeCommProcessor::*ProcessFunction)(int32_t, ::apache::thrift::protocol::TProtocol*, ::apache::thrift::protocol::TProtocol*, void*);
   typedef std::map<std::string, ProcessFunction> ProcessMap;
   ProcessMap processMap_;
+  void process_get_node_rep(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot, void* callContext);
   void process_add_node_rep(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot, void* callContext);
   void process_remove_node_rep(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot, void* callContext);
   void process_add_edge_rep(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot, void* callContext);
@@ -662,6 +775,7 @@ class InterNodeCommProcessor : public ::apache::thrift::TDispatchProcessor {
  public:
   InterNodeCommProcessor(boost::shared_ptr<InterNodeCommIf> iface) :
     iface_(iface) {
+    processMap_["get_node_rep"] = &InterNodeCommProcessor::process_get_node_rep;
     processMap_["add_node_rep"] = &InterNodeCommProcessor::process_add_node_rep;
     processMap_["remove_node_rep"] = &InterNodeCommProcessor::process_remove_node_rep;
     processMap_["add_edge_rep"] = &InterNodeCommProcessor::process_add_edge_rep;
@@ -695,6 +809,15 @@ class InterNodeCommMultiface : virtual public InterNodeCommIf {
     ifaces_.push_back(iface);
   }
  public:
+  int32_t get_node_rep(const int32_t node) {
+    size_t sz = ifaces_.size();
+    size_t i = 0;
+    for (; i < (sz - 1); ++i) {
+      ifaces_[i]->get_node_rep(node);
+    }
+    return ifaces_[i]->get_node_rep(node);
+  }
+
   int32_t add_node_rep(const int32_t node) {
     size_t sz = ifaces_.size();
     size_t i = 0;
@@ -770,6 +893,9 @@ class InterNodeCommConcurrentClient : virtual public InterNodeCommIf {
   boost::shared_ptr< ::apache::thrift::protocol::TProtocol> getOutputProtocol() {
     return poprot_;
   }
+  int32_t get_node_rep(const int32_t node);
+  int32_t send_get_node_rep(const int32_t node);
+  int32_t recv_get_node_rep(const int32_t seqid);
   int32_t add_node_rep(const int32_t node);
   int32_t send_add_node_rep(const int32_t node);
   int32_t recv_add_node_rep(const int32_t seqid);

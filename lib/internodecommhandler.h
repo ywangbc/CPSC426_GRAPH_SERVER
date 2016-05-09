@@ -39,6 +39,7 @@ class InterNodeCommHandler : public InterNodeCommIf{
       this->transport = transport_;
       this->clientp = clientp_;
     }
+    int32_t get_node_rep(int32_t node);
     int32_t add_node_rep(int32_t node);
     int32_t remove_node_rep(int32_t node);
     int32_t add_edge_rep(int32_t node1, int32_t node2);
