@@ -169,8 +169,8 @@ static void exec_command(const std::string& method, const std::vector<u64>& args
     int32_t retval;
     retval = add_edge_remote((u64)partnum, (u64)partlist.size(), all_transport_local, all_clientp, edge_list, args);
     if(retval == -1) {
-      mg_printf(nc, "HTTP/1.1 400 Bad Request\r\n\r\n");
-      fprintf(fp, "HTTP/1.1 400 Bad Request\r\n\r\n");
+      mg_printf(nc, "HTTP/1.1 400 Bad Request\r\nContent-Length:0\r\n\r\n");
+      fprintf(fp, "HTTP/1.1 400 Bad Request\r\nContent-Length:0\r\n\r\n");
       return;
     }
     else if(retval == 0) {
