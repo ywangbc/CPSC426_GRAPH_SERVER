@@ -327,6 +327,7 @@ int get_edge(boost::shared_ptr<apache::thrift::transport::TTransport> transport_
     remotev = args[0];
   }
   else { //both vertices do not belong to this partition, illegal operation
+    printf("Illegal operation: both vertices are in this partition!\n");
     return -1;
   }
 
@@ -337,11 +338,13 @@ int get_edge(boost::shared_ptr<apache::thrift::transport::TTransport> transport_
   rep = clientp->get_node_rep(remotev);
   transport_local->close();
   if(rep == 0) {
+    printf("Remote partition does not have node: %lu\n", remotev);
     my_graph_mutex.unlock();
     return -1;
   }
   if(edge_list.find(localu) == edge_list.end())
   {
+    printf("Current partition does not have node: %lu\n", localu);
     my_graph_mutex.unlock();
     return -1;
   }
