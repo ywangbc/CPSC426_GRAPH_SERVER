@@ -111,8 +111,8 @@ static void exec_command(const std::string& method, const std::vector<u64>& args
         return;
       }
     }
-    mg_printf(nc, "HTTP/1.1 200 OK\r\nContent-Length: %zu\r\nContent-Type: application/json\r\n\r\n%s\r\n", strlen(buf), buf);
-    fprintf(fp, "HTTP/1.1 200 OK\r\nContent-Length: %zu\r\nContent-Type: application/json\r\n\r\n%s\r\n", strlen(buf), buf);
+    mg_printf(nc, "HTTP/1.1 200 OK\r\nContent-Length: %zu\r\nContent-Type: application/json\r\n\r\n%s\r\n\r\n", strlen(buf)+4, buf);
+    fprintf(fp, "HTTP/1.1 200 OK\r\nContent-Length: %zu\r\nContent-Type: application/json\r\n\r\n%s\r\n\r\n", strlen(buf)+4, buf);
     fprintf(fp, "\n\n");
 /*
     if(!clientp) {
@@ -193,8 +193,8 @@ static void exec_command(const std::string& method, const std::vector<u64>& args
       }
     }
 
-    mg_printf(nc, "HTTP/1.1 200 OK\r\nContent-Length: %zu\r\nContent-Type: application/json\r\n\r\n%s\r\n", strlen(buf), buf);
-    fprintf(fp, "HTTP/1.1 200 OK\r\nContent-Length: %zu\r\nContent-Type: application/json\r\n\r\n%s\r\n", strlen(buf), buf);
+    mg_printf(nc, "HTTP/1.1 200 OK\r\nContent-Length: %zu\r\nContent-Type: application/json\r\n\r\n%s\r\n\r\n", strlen(buf)+4, buf);
+    fprintf(fp, "HTTP/1.1 200 OK\r\nContent-Length: %zu\r\nContent-Type: application/json\r\n\r\n%s\r\n\r\n", strlen(buf)+4, buf);
     fprintf(fp, "\n\n");
 /*
     transport_local->open();
@@ -270,8 +270,8 @@ static void exec_command(const std::string& method, const std::vector<u64>& args
         return ;
       }
     }
-    mg_printf(nc, "HTTP/1.1 200 OK\r\nContent-Length: %zu\r\nContent-Type: application/json\r\n\r\n%s\r\n", strlen(buf), buf);
-    fprintf(fp, "HTTP/1.1 200 OK\r\nContent-Length: %zu\r\nContent-Type: application/json\r\n\r\n%s\r\n", strlen(buf), buf);
+    mg_printf(nc, "HTTP/1.1 200 OK\r\nContent-Length: %zu\r\nContent-Type: application/json\r\n\r\n%s\r\n\r\n", strlen(buf)+4, buf);
+    fprintf(fp, "HTTP/1.1 200 OK\r\nContent-Length: %zu\r\nContent-Type: application/json\r\n\r\n%s\r\n\r\n", strlen(buf)+4, buf);
     fprintf(fp, "\n\n");
 /*    
     transport_local->open();
@@ -345,8 +345,8 @@ static void exec_command(const std::string& method, const std::vector<u64>& args
       }
     }
 
-    mg_printf(nc, "HTTP/1.1 200 OK\r\nContent-Length: %zu\r\nContent-Type: application/json\r\n\r\n%s", strlen(buf), buf);
-    fprintf(fp, "HTTP/1.1 200 OK\r\nContent-Length: %zu\r\nContent-Type: application/json\r\n\r\n%s", strlen(buf), buf);
+    mg_printf(nc, "HTTP/1.1 200 OK\r\nContent-Length: %zu\r\nContent-Type: application/json\r\n\r\n%s\r\n\r\n", strlen(buf)+4, buf);
+    fprintf(fp, "HTTP/1.1 200 OK\r\nContent-Length: %zu\r\nContent-Type: application/json\r\n\r\n%s\r\n\r\n", strlen(buf)+4, buf);
     fprintf(fp, "\n\n");
     
     /*
@@ -406,8 +406,8 @@ static void exec_command(const std::string& method, const std::vector<u64>& args
       fprintf(fp, "add_node json exceeded buf size\n");
     }
     
-    mg_printf(nc, "HTTP/1.1 200 OK\r\nContent-Length: %zu\r\nContent-Type: application/json\r\n\r\n%s\r\n", strlen(buf), buf);
-    fprintf(fp, "HTTP/1.1 200 OK\r\nContent-Length: %zu\r\nContent-Type: application/json\r\n\r\n%s\r\n", strlen(buf), buf);
+    mg_printf(nc, "HTTP/1.1 200 OK\r\nContent-Length: %zu\r\nContent-Type: application/json\r\n\r\n%s\r\n\r\n", strlen(buf)+4, buf);
+    fprintf(fp, "HTTP/1.1 200 OK\r\nContent-Length: %zu\r\nContent-Type: application/json\r\n\r\n%s\r\n\r\n", strlen(buf)+4, buf);
     fprintf(fp, "\n\n");
   }
   else if(method.compare("get_edge")==0)
@@ -435,8 +435,8 @@ static void exec_command(const std::string& method, const std::vector<u64>& args
     
     if(status == 1 || status == 0)
     {
-      mg_printf(nc, "HTTP/1.1 200 OK\r\nContent-Length: %zu\r\nContent-Type: application/json\r\n\r\n%s\r\n", strlen(buf), buf);
-      fprintf(fp, "HTTP/1.1 200 OK\r\nContent-Length: %zu\r\nContent-Type: application/json\r\n\r\n%s\r\n", strlen(buf), buf);
+      mg_printf(nc, "HTTP/1.1 200 OK\r\nContent-Length: %zu\r\nContent-Type: application/json\r\n\r\n%s\r\n\r\n", strlen(buf)+4, buf);
+      fprintf(fp, "HTTP/1.1 200 OK\r\nContent-Length: %zu\r\nContent-Type: application/json\r\n\r\n%s\r\n\r\n", strlen(buf)+4, buf);
       fprintf(fp, "\n\n");
     }
     else if(status == -1)
@@ -486,8 +486,8 @@ static void exec_command(const std::string& method, const std::vector<u64>& args
 
     if(status)
     {
-      mg_printf(nc, "HTTP/1.1 200 OK\r\nContent-Length: %zu\r\nContent-Type: application/json\r\n\r\n%s\r\n", strlen(buf), buf);
-      fprintf(fp, "HTTP/1.1 200 OK\r\nContent-Length: %zu\r\nContent-Type: application/json\r\n\r\n%s\r\n", strlen(buf), buf);
+      mg_printf(nc, "HTTP/1.1 200 OK\r\nContent-Length: %zu\r\nContent-Type: application/json\r\n\r\n%s\r\n\r\n", strlen(buf)+4, buf);
+      fprintf(fp, "HTTP/1.1 200 OK\r\nContent-Length: %zu\r\nContent-Type: application/json\r\n\r\n%s\r\n\r\n", strlen(buf)+4, buf);
       fprintf(fp, "\n\n");
     }
     else
@@ -515,8 +515,8 @@ static void exec_command(const std::string& method, const std::vector<u64>& args
         fprintf(fp, "shortest_path json exceeded buf size\n");
       }
 
-      mg_printf(nc, "HTTP/1.1 200 OK\r\nContent-Length: %zu\r\nContent-Type: application/json\r\n\r\n%s\r\n", strlen(buf), buf);
-      fprintf(fp, "HTTP/1.1 200 OK\r\nContent-Length: %zu\r\nContent-Type: application/json\r\n\r\n%s\r\n", strlen(buf), buf);
+      mg_printf(nc, "HTTP/1.1 200 OK\r\nContent-Length: %zu\r\nContent-Type: application/json\r\n\r\n%s\r\n\r\n", strlen(buf)+4, buf);
+      fprintf(fp, "HTTP/1.1 200 OK\r\nContent-Length: %zu\r\nContent-Type: application/json\r\n\r\n%s\r\n\r\n", strlen(buf)+4, buf);
       fprintf(fp, "\n\n");
     }
     else if(status == -1)
