@@ -24,7 +24,7 @@ int32_t add_edge(std::unordered_map<u64, std::unordered_set<u64>>& edge_list, co
  * return 0 if edge already exist
  * return -1 if node_a_id = node_b_id or, or node does not exist
  * */
-int add_edge_remote(u64 partnum, u64 partsize, boost::shared_ptr<apache::thrift::transport::TTransport> transport_local,boost::shared_ptr<InterNodeCommClient> clientp, std::unordered_map<u64, std::unordered_set<u64>>& edge_list, const std::vector<u64>& args);
+int add_edge_remote(u64 partnum, u64 partsize, std::vector<boost::shared_ptr<apache::thrift::transport::TTransport>> all_transport_local, std::vector<boost::shared_ptr<InterNodeCommClient>> clientp, std::unordered_map<u64, std::unordered_set<u64>>& edge_list, const std::vector<u64>& args);
 
 /*******************************
  * Get called as by add_edge_rep
@@ -43,7 +43,7 @@ int32_t remove_edge(std::unordered_map<u64, std::unordered_set<u64>>& edge_list,
  *  0 if edge already exist
  *  -1 if no enough storage
  * */
-int32_t remove_edge_remote(u64 partnum, u64 partsize, boost::shared_ptr<apache::thrift::transport::TTransport> transport_local,boost::shared_ptr<InterNodeCommClient> clientp, std::unordered_map<u64, std::unordered_set<u64>>& edge_list, const std::vector<u64>& args);
+int32_t remove_edge_remote(u64 partnum, u64 partsize, std::vector<boost::shared_ptr<apache::thrift::transport::TTransport>> transport_local, std::vector<boost::shared_ptr<InterNodeCommClient>> clientp, std::unordered_map<u64, std::unordered_set<u64>>& edge_list, const std::vector<u64>& args);
 
 /*******************************
  * Get called as by remove_edge_rep

@@ -77,7 +77,7 @@ void add_edge_local(std::unordered_map<u64, std::unordered_set<u64>>& edge_list,
  * return -1 if node_a_id = node_b_id or, or node does not exist
  * return -2 if no enough storage on remote
  * */
-int add_edge_remote(u64 partnum, u64 partsize, boost::shared_ptr<apache::thrift::transport::TTransport> transport_local,boost::shared_ptr<InterNodeCommClient> clientp, std::unordered_map<u64, std::unordered_set<u64>>& edge_list, const std::vector<u64>& args)
+int add_edge_remote(u64 partnum, u64 partsize, std::vector<boost::shared_ptr<apache::thrift::transport::TTransport>> all_transport_local,std::vector<boost::shared_ptr<InterNodeCommClient>> all_clientp, std::unordered_map<u64, std::unordered_set<u64>>& edge_list, const std::vector<u64>& args)
 {
   int retval;
   if(isMine(partnum, partsize, args[0]) && isMine(partnum, partsize, args[1])) {
@@ -115,9 +115,12 @@ int add_edge_remote(u64 partnum, u64 partsize, boost::shared_ptr<apache::thrift:
     }
     else
     {
-      transport_local->open();
-      retval = clientp->add_edge_rep(localu, remotev); //always pass in order [local, remote]
-      transport_local->close();
+      u64 remote_part;
+      remote_part = remotev % partsize;
+      printf("In add edge, remotev %lu is in partition %lu\n", remotev, remote_part);
+      all_transport_local[remote_part]->open();
+      retval = all_clientp[remote_part]->add_edge_rep(localu, remotev); //always pass in order [local, remote]
+      all_transport_local[remote_part]->close();
       if(retval != 1) {
         my_graph_mutex.unlock();
         return retval;
@@ -222,7 +225,7 @@ void remove_edge_local(std::unordered_map<u64, std::unordered_set<u64>>& edge_li
  *  0 if edge already exist
  *  -1 if no enough storage
  * */
-int32_t remove_edge_remote(u64 partnum, u64 partsize, boost::shared_ptr<apache::thrift::transport::TTransport> transport_local,boost::shared_ptr<InterNodeCommClient> clientp, std::unordered_map<u64, std::unordered_set<u64>>& edge_list, const std::vector<u64>& args)
+int32_t remove_edge_remote(u64 partnum, u64 partsize, std::vector<boost::shared_ptr<apache::thrift::transport::TTransport>> all_transport_local, std::vector<boost::shared_ptr<InterNodeCommClient>> all_clientp, std::unordered_map<u64, std::unordered_set<u64>>& edge_list, const std::vector<u64>& args)
 {
   int32_t retval;
   if(isMine(partnum, partsize, args[0]) && isMine(partnum, partsize, args[1])) {
@@ -253,9 +256,12 @@ int32_t remove_edge_remote(u64 partnum, u64 partsize, boost::shared_ptr<apache::
   }
   else
   {
-    transport_local->open();
-    retval = clientp->remove_edge_rep(localu, remotev); //always pass in order [local, remote]
-    transport_local->close();
+    u64 remote_part;
+    remote_part = remotev % partsize;
+    printf("In remove edge, remotev %lu is in partition %lu\n", remotev, remote_part);
+    all_transport_local[remote_part]->open();
+    retval = all_clientp[remote_part]->remove_edge_rep(localu, remotev); //always pass in order [local, remote]
+    all_transport_local[remote_part]->close();
     if(retval != 1) {
       my_graph_mutex.unlock();
       return retval;
