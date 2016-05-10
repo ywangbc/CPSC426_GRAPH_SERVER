@@ -99,15 +99,15 @@ static void exec_command(const std::string& method, const std::vector<u64>& args
     }
 
     if(!add_node(edge_list, args)) {
-      mg_printf(nc, "HTTP/1.1 204 OK\r\n\r\n");
-      fprintf(fp, "HTTP/1.1 204 OK\r\n\r\n");
+      mg_printf(nc, "HTTP/1.1 204 OK\r\nContent-Length:0\r\n\r\n");
+      fprintf(fp, "HTTP/1.1 204 OK\r\nContent-Length:0\r\n\r\n");
       return;
     }
     if(fd!=-1) {
       retval = storageLogp->update_log(ADD_NODE, args[0], 0);
       if(retval == -1) {
-        mg_printf(nc, "HTTP/1.1 507 No space for log\r\n\r\n");
-        fprintf(fp, "HTTP/1.1 507 No space for log\r\n\r\n");
+        mg_printf(nc, "HTTP/1.1 507 No space for log\r\nContent-Length:0\r\n\r\n");
+        fprintf(fp, "HTTP/1.1 507 No space for log\r\nContent-Length:0\r\n\r\n");
         return;
       }
     }
@@ -174,21 +174,21 @@ static void exec_command(const std::string& method, const std::vector<u64>& args
       return;
     }
     else if(retval == 0) {
-      mg_printf(nc, "HTTP/1.1 204 OK\r\n\r\n");
-      fprintf(fp, "HTTP/1.1 204 OK\r\n\r\n");
+      mg_printf(nc, "HTTP/1.1 204 OK\r\nContent-Length:0\r\n\r\n");
+      fprintf(fp, "HTTP/1.1 204 OK\r\nContent-Length:0\r\n\r\n");
       return;
     }
     else if(retval == -2) {
-      mg_printf(nc, "HTTP/1.1 507 No space for log\r\n\r\n");
-      fprintf(fp, "HTTP/1.1 507 No space for log\r\n\r\n");
+      mg_printf(nc, "HTTP/1.1 507 No space for log\r\nContent-Length:0\r\n\r\n");
+      fprintf(fp, "HTTP/1.1 507 No space for log\r\nContent-Length:0\r\n\r\n");
       return;
     }
 
     if(fd!=-1) {
       retval = storageLogp->update_log(ADD_EDGE, args[0], args[1]);
       if(retval == -1) {
-        mg_printf(nc, "HTTP/1.1 507 No space for log\r\n\r\n");
-        fprintf(fp, "HTTP/1.1 507 No space for log\r\n\r\n");
+        mg_printf(nc, "HTTP/1.1 507 No space for log\r\nContent-Length:0\r\n\r\n");
+        fprintf(fp, "HTTP/1.1 507 No space for log\r\nContent-Length:0\r\n\r\n");
         return;
       }
     }
@@ -258,15 +258,15 @@ static void exec_command(const std::string& method, const std::vector<u64>& args
     int32_t retval;
 
     if(!remove_node(edge_list, args)) {
-      mg_printf(nc, "HTTP/1.1 400 Bad Request\r\n\r\n");
-      fprintf(fp, "HTTP/1.1 400 Bad Request\r\n\r\n");
+      mg_printf(nc, "HTTP/1.1 400 Bad Request\r\nContent-Length:0\r\n\r\n");
+      fprintf(fp, "HTTP/1.1 400 Bad Request\r\nContent-Length:0\r\n\r\n");
       return;
     }
     if(fd!=-1) {
       retval = storageLogp->update_log(REMOVE_NODE, args[0], 0);
       if(retval == -1) {
-        mg_printf(nc, "HTTP/1.1 507 No space for log\r\n\r\n");
-        fprintf(fp, "HTTP/1.1 507 No space for log\r\n\r\n");
+        mg_printf(nc, "HTTP/1.1 507 No space for log\r\nContent-Length:0\r\n\r\n");
+        fprintf(fp, "HTTP/1.1 507 No space for log\r\nContent-Length:0\r\n\r\n");
         return ;
       }
     }
@@ -325,13 +325,13 @@ static void exec_command(const std::string& method, const std::vector<u64>& args
     retval = remove_edge_remote((u64)partnum, (u64)partlist.size(), all_transport_local, all_clientp, edge_list, args);
     
     if(retval == 0) {
-      mg_printf(nc, "HTTP/1.1 400 Bad Request\r\n\r\n");
-      fprintf(fp, "HTTP/1.1 400 Bad Request\r\n\r\n");
+      mg_printf(nc, "HTTP/1.1 400 Bad Request\r\nContent-Length:0\r\n\r\n");
+      fprintf(fp, "HTTP/1.1 400 Bad Request\r\nContent-Length:0\r\n\r\n");
       return;
     }
     else if(retval == -1) {
-      mg_printf(nc, "HTTP/1.1 507 No space for log\r\n\r\n");
-      fprintf(fp, "HTTP/1.1 507 No space for log\r\n\r\n");
+      mg_printf(nc, "HTTP/1.1 507 No space for log\r\nContent-Length:0\r\n\r\n");
+      fprintf(fp, "HTTP/1.1 507 No space for log\r\nContent-Length:0\r\n\r\n");
       return;
     }
 
@@ -339,8 +339,8 @@ static void exec_command(const std::string& method, const std::vector<u64>& args
       printf("Log file is on in remove_edge\n");
       retval = storageLogp->update_log(REMOVE_EDGE, args[0], args[1]);
       if(retval == -1) {
-        mg_printf(nc, "HTTP/1.1 507 No space for log\r\n\r\n");
-        fprintf(fp, "HTTP/1.1 507 No space for log\r\n\r\n");
+        mg_printf(nc, "HTTP/1.1 507 No space for log\r\nContent-Length:0\r\n\r\n");
+        fprintf(fp, "HTTP/1.1 507 No space for log\r\nContent-Length:0\r\n\r\n");
         return;
       }
     }
@@ -441,8 +441,8 @@ static void exec_command(const std::string& method, const std::vector<u64>& args
     }
     else if(status == -1)
     {
-      mg_printf(nc, "HTTP/1.1 400 Bad Request\r\n\r\n");
-      fprintf(fp, "HTTP/1.1 400 Bad Request\r\n\r\n");
+      mg_printf(nc, "HTTP/1.1 400 Bad Request\r\nContent-Length:0\r\n\r\n");
+      fprintf(fp, "HTTP/1.1 400 Bad Request\r\nContent-Length:0\r\n\r\n");
     }
     else
     {
@@ -492,8 +492,8 @@ static void exec_command(const std::string& method, const std::vector<u64>& args
     }
     else
     {
-      mg_printf(nc, "HTTP/1.1 400 Bad Request\r\n\r\n");
-      fprintf(fp, "HTTP/1.1 400 Bad Request\r\n\r\n");
+      mg_printf(nc, "HTTP/1.1 400 Bad Request\r\nContent-Length:0\r\n\r\n");
+      fprintf(fp, "HTTP/1.1 400 Bad Request\r\nContent-Length:0\r\n\r\n");
     }
 
   }
@@ -521,13 +521,13 @@ static void exec_command(const std::string& method, const std::vector<u64>& args
     }
     else if(status == -1)
     {
-      mg_printf(nc, "HTTP/1.1 204 OK\r\n\r\n");
-      fprintf(fp, "HTTP/1.1 204 OK\r\n\r\n");
+      mg_printf(nc, "HTTP/1.1 204 OK\r\nContent-Length:0\r\n\r\n");
+      fprintf(fp, "HTTP/1.1 204 OK\r\nContent-Length:0\r\n\r\n");
     }
     else if(status == -2)
     {
-      mg_printf(nc, "HTTP/1.1 400 Bad Request\r\n\r\n");
-      fprintf(fp, "HTTP/1.1 400 Bad Request\r\n\r\n");
+      mg_printf(nc, "HTTP/1.1 400 Bad Request\r\nContent-Length:0\r\n\r\n");
+      fprintf(fp, "HTTP/1.1 400 Bad Request\r\nContent-Length:0\r\n\r\n");
     }
     else
     {
@@ -552,12 +552,12 @@ static void exec_command(const std::string& method, const std::vector<u64>& args
       retval=-1;
     }
     if(retval < 0) {
-      mg_printf(nc, "HTTP/1.1 507 insufficient space for checkpoint\r\n\r\n");
-      fprintf(fp, "HTTP/1.1 507 insufficient space for checkpoint\r\n\r\n");
+      mg_printf(nc, "HTTP/1.1 507 insufficient space for checkpoint\r\nContent-Length:0\r\n\r\n");
+      fprintf(fp, "HTTP/1.1 507 insufficient space for checkpoint\r\nContent-Length:0\r\n\r\n");
     }
     else {
-      mg_printf(nc, "HTTP/1.1 200 OK\r\n\r\n");
-      fprintf(fp, "HTTP/1.1 200 OK\r\n\r\n");
+      mg_printf(nc, "HTTP/1.1 200 OK\r\nContent-Length:0\r\n\r\n");
+      fprintf(fp, "HTTP/1.1 200 OK\r\nContent-Length:0\r\n\r\n");
     }
     printf("checkpoint finished\n");
   }
