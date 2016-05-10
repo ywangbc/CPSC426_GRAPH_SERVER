@@ -25,12 +25,19 @@ int fd; //file descriptor for storage disk
 
 int partnum=-1; //which partition this server stands for
 vector<char*> partlist;
+vector<char*> all_addr;
+vector<int> all_port;
 
 StorageLog* storageLogp;
 boost::shared_ptr<TTransport> socket_local;
 boost::shared_ptr<TTransport> transport_local;
 boost::shared_ptr<TProtocol> protocol_local;
 boost::shared_ptr<InterNodeCommClient> clientp;
+  
+vector<boost::shared_ptr<TTransport>> all_socket_local;
+vector<boost::shared_ptr<TTransport>> all_transport_local;
+vector<boost::shared_ptr<TProtocol>> all_protocol_local;
+vector<boost::shared_ptr<InterNodeCommClient>> all_clientp;
 
 static std::string get_method(const char* p)
 {
@@ -410,7 +417,7 @@ static void exec_command(const std::string& method, const std::vector<u64>& args
       fprintf(fp, "Number of args does not match in get_edge: %lu \n", args.size());
       return;
     }
-    int status = get_edge(transport_local, clientp, partnum, partlist.size(), edge_list, args);
+    int status = get_edge(all_transport_local, all_clientp, partnum, partlist.size(), edge_list, args);
     unsigned int count;
     if(status == 1)
     {
@@ -618,12 +625,25 @@ void mongoose_start() {
 }
 
 void thrift_start(char* slave_addr, int slave_port) {
-  
+
+  u64 i;
+  for(i=0; i<partlist.size(); i++) {
+    all_socket_local.push_back(boost::shared_ptr<TTransport>(new TSocket(all_addr[i], all_port[i])));
+    all_transport_local.push_back(boost::shared_ptr<TTransport>(new TBufferedTransport(all_socket_local[i])));
+    all_protocol_local.push_back(boost::shared_ptr<TProtocol>(new TBinaryProtocol(all_transport_local[i])));
+    all_clientp.push_back(boost::shared_ptr<InterNodeCommClient>(new InterNodeCommClient(all_protocol_local[i])));
+  }
   if(slave_addr != 0) {
+    socket_local = all_socket_local[(partnum+1)%partlist.size()];
+    transport_local = all_transport_local[(partnum+1)%partlist.size()];
+    protocol_local = all_protocol_local[(partnum+1)%partlist.size()];
+    clientp = all_clientp[(partnum+1)%partlist.size()];
+    /*
     socket_local = boost::shared_ptr<TTransport>(new TSocket(slave_addr, slave_port));
     transport_local = boost::shared_ptr<TTransport>(new TBufferedTransport(socket_local));
     protocol_local = boost::shared_ptr<TProtocol>(new TBinaryProtocol(transport_local));
     clientp = boost::shared_ptr<InterNodeCommClient>(new InterNodeCommClient(protocol_local));
+    */
     //transport->open();
   }
 
@@ -651,6 +671,7 @@ int main(int argc, char* argv[]) {
   
   int opt;
   int index; //used for processing partlist only
+  u64 i; //iterator
   
 
   while((opt = getopt(argc, argv, "dfb:p:l:")) != -1) {
@@ -744,9 +765,19 @@ int main(int argc, char* argv[]) {
   fp = fopen("local_out", "w");
 
   std::thread mongoose_thread(mongoose_start);
+  for(i=0; i<partlist.size(); i++) {
+    all_addr.push_back(strtok(partlist[i], ":"));
+    all_port.push_back(atoi(strtok(NULL, ":")));
+  }
+  printf("Address of all partitions are:\n");
+  for(i=0; i<partlist.size(); i++) {
+    printf("IP: %s, Port: %d\n", all_addr[i], all_port[i]);
+  }
+
+
   //std::thread thrift_thread(thrift_start, slave_addr, slave_port);
-  slave_addr = strtok(partlist[(partnum+1)%partlist.size()], ":");
-  slave_port = atoi(strtok(NULL, ":"));
+  slave_addr = all_addr[(partnum+1)%partlist.size()];
+  slave_port = all_port[(partnum+1)%partlist.size()];
 
   printf("Thrift is connecting to %s at port %d.\n", slave_addr, slave_port);
 

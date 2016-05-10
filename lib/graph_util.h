@@ -59,7 +59,7 @@ bool get_node(std::unordered_map<u64, std::unordered_set<u64>>& edge_list, const
  * return 0 if the edge is not in the graph
  * if any of the node is not in the graph, return -1
  */
-int get_edge(boost::shared_ptr<apache::thrift::transport::TTransport> transport_local,boost::shared_ptr<InterNodeCommClient> clientp, u64 partnum, u64 partsize, std::unordered_map<u64, std::unordered_set<u64>>& edge_list, const std::vector<u64>& args);
+int get_edge(std::vector<boost::shared_ptr<apache::thrift::transport::TTransport>> all_transport_local, std::vector<boost::shared_ptr<InterNodeCommClient>> all_clientp, u64 partnum, u64 partsize, std::unordered_map<u64, std::unordered_set<u64>>& edge_list, const std::vector<u64>& args);
 
 /* return false if the node does not exist
  * return true and put neighbours into list if exist

@@ -296,7 +296,7 @@ int32_t remove_edge_rep_local(std::unordered_map<u64, std::unordered_set<u64>>& 
  */
 bool get_node(std::unordered_map<u64, std::unordered_set<u64>>& edge_list, const std::vector<u64>& args)
 {
-  //printf("In get_node\n");
+  printf("In correct get_node\n");
   my_graph_mutex.lock();
   if(edge_list.find(args[0]) == edge_list.end())
   {
@@ -314,15 +314,17 @@ bool get_node(std::unordered_map<u64, std::unordered_set<u64>>& edge_list, const
  * return 0 if the edge is not in the graph
  * if any of the node is not in the graph, return -1
  */
-int get_edge(boost::shared_ptr<apache::thrift::transport::TTransport> transport_local,boost::shared_ptr<InterNodeCommClient> clientp, u64 partnum, u64 partsize, std::unordered_map<u64, std::unordered_set<u64>>& edge_list, const std::vector<u64>& args)
+int get_edge(std::vector<boost::shared_ptr<apache::thrift::transport::TTransport>> all_transport_local, std::vector<boost::shared_ptr<InterNodeCommClient>> all_clientp, u64 partnum, u64 partsize, std::unordered_map<u64, std::unordered_set<u64>>& edge_list, const std::vector<u64>& args)
 {
   //Here remotev is not necessarily remote, we only need to ensure localu is local
   u64 localu, remotev;
   if(isMine(partnum, partsize, args[0])) {
+    printf("Node %lu belongs to this partition %lu\n", args[0], partnum);
     localu = args[0];
     remotev = args[1]; 
   }
   else if(isMine(partnum, partsize, args[1])) {
+    printf("Node %lu belongs to this partition %lu\n", args[0], partnum);
     localu = args[1];
     remotev = args[0];
   }
@@ -334,9 +336,12 @@ int get_edge(boost::shared_ptr<apache::thrift::transport::TTransport> transport_
   //printf("In get_edge\n");
   my_graph_mutex.lock();
   int32_t rep;
-  transport_local->open();
-  rep = clientp->get_node_rep(remotev);
-  transport_local->close();
+  u64 remote_part;
+  remote_part=remotev%partsize;
+  printf("In get edge, remote node %lu is in partition %lu\n", remotev, remote_part);
+  all_transport_local[remote_part]->open();
+  rep = all_clientp[remote_part]->get_node_rep(remotev);
+  all_transport_local[remote_part]->close();
   if(rep == 0) {
     printf("Remote partition does not have node: %lu\n", remotev);
     my_graph_mutex.unlock();
